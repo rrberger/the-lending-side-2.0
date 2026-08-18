@@ -528,64 +528,17 @@ function renderPostDetail(slug) {
 
 // --- RENDER 3: PLAYLISTS PAGE ---
 function renderPlaylists() {
-  const playlists = [
-    {
-      title: "Late Night Walks",
-      vibe: "atmospheric / slowcore / moody",
-      desc: "minimal ambient, dark waves, and low-frequency structures for walking alone through quiet suburbs at 2 AM.",
-      embedId: "37i9dQZF1DX8IqG4Ppgu7E"
-    },
-    {
-      title: "Analog Mornings",
-      vibe: "warm folk / acoustic / organic",
-      desc: "soft acoustic strings, crackling tape hums, and coffee-stained melodies that complement early morning fog.",
-      embedId: "37i9dQZF1DX4sWSpwq3LiO"
-    },
-    {
-      title: "Quiet Isolation",
-      vibe: "ambient / modern classical / minimalist piano",
-      desc: "minimal piano solos and modular synthesizers to capture the weight of grief and the quiet space of recovery.",
-      embedId: "37i9dQZF1DX1s9KwqG7n1X"
-    },
-    {
-      title: "The Lending Side Selects",
-      vibe: "indie / dream-pop / post-punk",
-      desc: "a curated rotating collection of shoegaze, raw guitars, and introspective anthems currently playing in my room.",
-      embedId: "37i9dQZF1DXdbXrJ2F4n44"
-    }
-  ];
-  
   let html = `
     <div class="page-container">
       <h1>playlists</h1>
-      <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:3rem; max-width:650px;">
+      <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:2rem; max-width:650px; line-height:1.6;">
         music is the skeleton that holds the imagery together. these are the songs and soundscapes that were looping in my headphones while developing these stories and capturing these frames.
       </p>
       
-      <div class="playlists-grid">
-  `;
-  
-  playlists.forEach(playlist => {
-    html += `
-      <div class="playlist-card">
-        <div class="playlist-info">
-          <div>
-            <h3>${playlist.title}</h3>
-            <div class="vibe">${playlist.vibe}</div>
-            <p class="desc">${playlist.desc}</p>
-          </div>
-          <div style="font-family:var(--font-mono); font-size:0.6rem; color:var(--text-dim);">
-            INTERACTIVE_PLAYER // CONNECTED
-          </div>
-        </div>
-        <div class="playlist-spotify">
-          <iframe src="https://open.spotify.com/embed/playlist/${playlist.embedId}?utm_source=generator&theme=0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
-        </div>
-      </div>
-    `;
-  });
-  
-  html += `
+      <div style="border: 1px dashed var(--border-color); padding: 3rem 2rem; border-radius: 4px; text-align: center; max-width: 650px; background: rgba(255,255,255,0.01); margin-top: 1rem;">
+        <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin: 0; text-transform: uppercase; letter-spacing: 0.15em;">
+          // Curating tapes... coming soon
+        </p>
       </div>
     </div>
   `;
