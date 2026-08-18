@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="personal photography, analog frames, words, playlists, and prints by ryan berger.">
+  <title>the lending side — photographs / words / playlists</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Film Grain Overlay -->
+  <div class="grain"></div>
+
+  <div id="app">
+    <!-- Desktop Navigation Sidebar -->
+    <header class="sidebar">
+      <div class="brand">
+        <h1><a href="#home">the lending side<span class="stoplight"></span></a></h1>
+        <p>analog / words / playlists</p>
+      </div>
+
+      <nav class="menu">
+        <ul>
+          <li><a href="#home" class="menu-link active" data-target="home">01_blog</a></li>
+          <li><a href="#playlists" class="menu-link" data-target="playlists">02_playlists</a></li>
+          <li><a href="#prints" class="menu-link" data-target="prints">03_prints</a></li>
+          <li><a href="#about" class="menu-link" data-target="about">04_about</a></li>
+        </ul>
+      </nav>
+
+      <!-- View Switcher (Only active on Blog page) -->
+      <div class="layout-switch" id="layout-switcher-container">
+        <div class="minimal-panel" data-title="view">
+          <div class="switch-buttons">
+            <button class="switch-btn active" data-view="film_strip">film_strip</button>
+            <button class="switch-btn" data-view="journal">journal</button>
+            <button class="switch-btn" data-view="index">index_grid</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="minimal-panel" data-title="system" style="margin-bottom: 0.8rem;">
+          <div class="theme-toggle-container">
+            <button class="theme-btn" id="theme-toggle-btn" aria-label="Toggle light/dark theme">
+              <span id="theme-icon-text">☀ Light Mode</span>
+            </button>
+          </div>
+          <!-- Admin CMS Dashboard Link -->
+          <a href="#admin" class="theme-btn menu-link" data-target="admin" style="display: block; text-align: center; margin-top: 0.4rem;">
+            [ admin_dashboard ]
+          </a>
+        </div>
+        
+        <div class="copyright">
+          &copy; <span id="current-year">2026</span> ryan berger.<br>
+          all frames analog.
+        </div>
+      </div>
+    </header>
+
+    <!-- Mobile Navigation Bar (Bottom Docked) -->
+    <div class="mobile-nav">
+      <a href="#home" class="mobile-nav-link active" data-target="home">01_blog</a>
+      <a href="#playlists" class="mobile-nav-link" data-target="playlists">02_music</a>
+      <a href="#prints" class="mobile-nav-link" data-target="prints">03_prints</a>
+      <a href="#about" class="mobile-nav-link" data-target="about">04_about</a>
+      <a href="#admin" class="mobile-nav-link" data-target="admin">admin</a>
+    </div>
+
+    <!-- Main Viewport Context -->
+    <main id="main-viewport" class="viewport">
+      <!-- Dynamic Views get injected here -->
+      <div class="view-section" id="view-content"></div>
+    </main>
+  </div>
+
+  <!-- Fullscreen Immersive Lightbox -->
+  <div id="lightbox" class="lightbox">
+    <button class="lightbox-close" id="lightbox-close" aria-label="Close lightbox">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="lightbox-nav lightbox-prev" id="lightbox-prev" aria-label="Previous image">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="lightbox-nav lightbox-next" id="lightbox-next" aria-label="Next image">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="lightbox-content">
+      <img id="lightbox-img" src="" alt="Expanded Photograph">
+      <div class="lightbox-caption">
+      <div class="minimal-panel" style="padding: 0.6rem 1rem; margin-top: 0.4rem; border: none; background: none;">
+          <div id="lightbox-title" class="lightbox-title"></div>
+          <div id="lightbox-exif" class="lightbox-exif"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print Inquiry Modal -->
+  <div id="inquiry-modal" class="inquiry-modal">
+    <div class="inquiry-content">
+      <button id="inquiry-close" class="inquiry-close" aria-label="Close inquiry window">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      
+      <div class="minimal-panel" style="margin-top: 0.5rem;">
+        <h2>Print Inquiry</h2>
+        <p>Signed, dated, and numbered prints. Printed at home by me.</p>
+        
+        <div class="inquiry-photo-preview">
+          <img id="inquiry-img" src="" alt="Selected Photo for print">
+          <div class="inquiry-photo-info">
+            <h4 id="inquiry-photo-title">Photo Title</h4>
+            <span>Custom Archival Print</span>
+          </div>
+        </div>
+        
+        <form id="inquiry-form">
+          <div class="inquiry-form-group">
+            <label for="print-size">Dimensions / Pricing</label>
+            <select id="print-size" required>
+              <option value="8.5x11 ($15)">8.5" x 11" with 0.5" border — $15</option>
+              <option value="13x19 ($25)">13" x 19" with 1.0" border — $25</option>
+            </select>
+          </div>
+          <div class="inquiry-form-group">
+            <label for="client-name">Your Name</label>
+            <input type="text" id="client-name" placeholder="John Doe" required>
+          </div>
+          <div class="inquiry-form-group">
+            <label for="client-email">Email Address</label>
+            <input type="email" id="client-email" placeholder="john@example.com" required>
+          </div>
+          <div class="inquiry-form-group">
+            <label for="client-notes">Notes / Custom Request (Optional)</label>
+            <textarea id="client-notes" rows="3" placeholder="Sizing, frame style, shipping destination..."></textarea>
+          </div>
+          <button type="submit" class="inquiry-submit-btn">Send Draft Inquiry</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Custom Terminal Confirm Modal -->
+  <div id="confirm-modal" class="inquiry-modal" style="z-index: 3000;">
+    <div class="inquiry-content" style="max-width: 400px; text-align: center;">
+      <div class="minimal-panel" style="margin-top: 0.5rem;">
+        <p id="confirm-message" style="margin-bottom: 1.5rem; font-size: 0.8rem;"></p>
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+          <button id="btn-confirm-yes" class="btn btn-primary" style="font-weight: 600;">[ Y ] YES</button>
+          <button id="btn-confirm-no" class="btn">[ N ] NO</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ES6 App Controller -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
