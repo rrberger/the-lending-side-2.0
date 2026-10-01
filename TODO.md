@@ -1,37 +1,35 @@
-# The Lending Side — Custom Domain Task List (Tomorrow)
+# The Lending Side — Project Roadmap & Task List
 
-You have successfully uploaded all 471 images to Cloudflare R2 and migrated your database references. Tomorrow, complete the DNS custom domain setup to remove Cloudflare's development subdomain rate limits (`429` errors).
+## ─── ACTIVE & UPCOMING TASKS ───
+
+- [ ] **1. Revisit & Overhaul Film Strip View (`film_strip`)**
+  * Current status: Temporarily commented out in navigation and routed to `journal` view by default.
+  * Objectives:
+    - Re-architect the horizontal presentation so multi-image galleries scroll or paginate cleanly without collision.
+    - Ensure fluid trackpad, wheel, and mobile swipe navigation across screen resolutions.
+    - Re-enable `film_strip` button in `index.html` and `app.js` once responsive layout tests pass.
+
+- [ ] **2. Open Source CMS Tool Integration for Local Post Authoring**
+  * Current status: Designing & implementing local workflow.
+  * Objectives:
+    - Provide a modern, intuitive editor for writing articles and inserting images.
+    - Upload images directly to Cloudflare R2 (`the-lending-side-media` / `media.thelendingside.com`).
+    - Output new posts into `data/posts.json` (or Markdown files) so git commit + push automatically deploys them to Cloudflare Pages.
+    - Zero exposure to public web (runs locally on `localhost`).
+
+- [ ] **3. Implement Spam-Resistant Commenting System**
+  * Current status: Architecture proposal.
+  * Objectives:
+    - Enable visitors to comment on posts without running heavy PHP/WordPress backends.
+    - Spam mitigation strategies (Cloudflare Turnstile, GitHub Discussions / Giscus, Cusdis with moderation queue, or Cloudflare Worker + D1).
 
 ---
 
-## ─── TASK LIST ───
+## ─── COMPLETED TASKS ───
 
-- [ ] **1. Choose and Configure Your Custom Domain Routing**
-  
-  *   **Option A (Recommended: Move DNS to Cloudflare)**
-      1. Log in to [dash.cloudflare.com](https://dash.cloudflare.com/).
-      2. Click **Add a Site** and add `thelendingside.com`.
-      3. Change your nameservers at your domain registrar (GoDaddy, Namecheap, etc.) to point to Cloudflare's nameservers.
-      4. Once active, go to **R2 > images bucket > Settings > Custom Domains** and connect `media.thelendingside.com`.
-  
-  *   **Option B (Keep DNS Elsewhere: BunnyCDN Proxy)**
-      1. Create a pull zone in Bunny.net pointing to `https://pub-52f53ff9fc907fb66a04d74c5de34a55.r2.dev`.
-      2. Connect `media.thelendingside.com` as a custom domain in Bunny.
-      3. Log in to your external DNS provider and add a CNAME record:
-         *   **Name**: `media`
-         *   **Target**: `<your-bunny-pull-zone>.b-cdn.net`
-
-- [ ] **2. Update Environment Configuration**
-  1. Open `.env` in the repository root.
-  2. Set `R2_PUBLIC_CUSTOM_DOMAIN` to your custom domain:
-     ```ini
-     R2_PUBLIC_CUSTOM_DOMAIN=https://media.thelendingside.com
-     ```
-
-- [ ] **3. Re-run Database Path Migration**
-  1. Open your terminal in the repository root.
-  2. Run the migration script to rewrite the 3,991 image URLs to use your new custom domain:
-     ```powershell
-     python scripts/migrate_posts_to_r2.py
-     ```
-  3. Verify the site renders photos successfully.
+- [x] **DNS & Nameservers**: Migrated `thelendingside.com` nameservers to Cloudflare.
+- [x] **R2 Custom Media Domain**: Connected `media.thelendingside.com` to Cloudflare R2 bucket `the-lending-side-media`.
+- [x] **Database Migration**: Rewrote 3,993 image references in `data/posts.json` from `pub-*.r2.dev` to `https://media.thelendingside.com`.
+- [x] **EXIF Stripped**: Removed inline EXIF info cards beneath photos; preserved full clean aesthetic.
+- [x] **High-Res Lightbox**: Click-to-enlarge loads full resolution uncompressed assets with keyboard/touch navigation.
+- [x] **Admin Security**: Completely purged admin interface and routes from public frontend build.

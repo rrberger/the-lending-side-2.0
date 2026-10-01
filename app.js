@@ -3,7 +3,8 @@ const state = {
   posts: [],
   pages: [],
   exifMap: {},
-  currentViewMode: localStorage.getItem('viewMode') || 'film_strip',
+  // Default to journal view (film_strip commented out for now)
+  currentViewMode: (localStorage.getItem('viewMode') === 'film_strip' || !localStorage.getItem('viewMode')) ? 'journal' : localStorage.getItem('viewMode'),
   currentTheme: localStorage.getItem('theme') || 'dark',
   lightboxImages: [],
   lightboxIndex: 0,
@@ -195,6 +196,7 @@ function setTheme(theme) {
 
 // Set View mode
 function setViewMode(viewMode) {
+  if (viewMode === 'film_strip') viewMode = 'journal';
   state.currentViewMode = viewMode;
   localStorage.setItem('viewMode', viewMode);
   elements.switchBtns.forEach(btn => {
@@ -266,12 +268,16 @@ function renderHome() {
     renderLoading();
     return;
   }
+  // film_strip view temporarily commented out (TO DO: revisit layout)
+  /*
   if (state.currentViewMode === 'film_strip') {
     renderFilmStripView();
-  } else if (state.currentViewMode === 'journal') {
-    renderJournalView();
-  } else {
+  } else
+  */
+  if (state.currentViewMode === 'index') {
     renderIndexView();
+  } else {
+    renderJournalView();
   }
 }
 
