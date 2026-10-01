@@ -22,7 +22,7 @@ const elements = {
   switchBtns: document.querySelectorAll('.switch-btn'),
   themeToggleBtn: document.getElementById('theme-toggle-btn'),
   themeIconText: document.getElementById('theme-icon-text'),
-  menuLinks: document.querySelectorAll('.menu-link, .mobile-nav-link'),
+  menuLinks: document.querySelectorAll('.menu-link'),
   currentYear: document.getElementById('current-year'),
   
   // Lightbox

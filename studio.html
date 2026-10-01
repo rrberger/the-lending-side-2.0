@@ -18,6 +18,9 @@
   <!-- Marked Markdown Parser -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+  <!-- Turndown HTML-to-Markdown Converter -->
+  <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.js"></script>
+
   <style>
     :root {
       --bg-color: #07090c;
@@ -747,12 +750,54 @@
       }
     }
 
+    // Helper: Decode HTML entities (&8220; -> “)
+    function decodeHtmlEntities(str) {
+      if (!str) return '';
+      const txt = document.createElement('textarea');
+      txt.innerHTML = str;
+      return txt.value;
+    }
+
+    // Helper: Convert WordPress HTML soup to clean readable Markdown
+    function cleanWordPressContentToMarkdown(rawHtml) {
+      if (!rawHtml) return '';
+      if (typeof TurndownService === 'undefined') return rawHtml;
+
+      const turndown = new TurndownService({
+        headingStyle: 'atx',
+        codeBlockStyle: 'fenced',
+        emDelimiter: '*'
+      });
+
+      turndown.addRule('cleanWpImages', {
+        filter: function(node) {
+          return node.nodeName === 'FIGURE' || (node.nodeName === 'DIV' && node.classList.contains('wp-block-image'));
+        },
+        replacement: function(content, node) {
+          const imgs = node.querySelectorAll('img');
+          if (imgs.length === 0) return content;
+          let md = '\n\n';
+          imgs.forEach(img => {
+            const rawSrc = img.getAttribute('data-orig-file') || img.getAttribute('src') || '';
+            const cleanSrc = rawSrc.split('?')[0];
+            const alt = img.getAttribute('data-image-title') || img.getAttribute('alt') || 'Photograph';
+            if (cleanSrc) {
+              md += `![${alt}](${cleanSrc})\n\n`;
+            }
+          });
+          return md;
+        }
+      });
+
+      return turndown.turndown(rawHtml).replace(/\n{3,}/g, '\n\n').trim();
+    }
+
     // Render Posts in Sidebar
     function renderPostsList(filter = '') {
       el.postsList.innerHTML = '';
       const filtered = studioState.posts.filter(p => 
-        p.title.toLowerCase().includes(filter.toLowerCase()) || 
-        p.slug.toLowerCase().includes(filter.toLowerCase())
+        (p.title || '').toLowerCase().includes(filter.toLowerCase()) || 
+        (p.slug || '').toLowerCase().includes(filter.toLowerCase())
       );
 
       filtered.forEach(post => {
@@ -768,9 +813,11 @@
           day: 'numeric'
         });
 
+        const cleanTitle = decodeHtmlEntities(post.title || 'Untitled');
+
         li.innerHTML = `
           <div class="post-item-date">${dateStr}</div>
-          <div class="post-item-title">${post.title}</div>
+          <div class="post-item-title">${cleanTitle}</div>
         `;
 
         li.addEventListener('click', () => selectPost(post));
@@ -783,9 +830,10 @@
       studioState.currentPost = post;
       renderPostsList(el.searchInput.value);
 
-      el.titleInput.value = post.title || '';
+      const cleanTitle = decodeHtmlEntities(post.title || '');
+      el.titleInput.value = cleanTitle;
       el.slugInput.value = post.slug || '';
-      el.excerptInput.value = (post.excerpt || '').replace(/<[^>]*>?/gm, '').trim();
+      el.excerptInput.value = decodeHtmlEntities((post.excerpt || '').replace(/<[^>]*>?/gm, '').trim());
       el.featuredImageInput.value = post.featured_image || '';
 
       if (post.date) {
@@ -793,11 +841,14 @@
         el.dateInput.value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
       }
 
-      // Populate Editor: Use markdown if present, otherwise clean HTML
-      const content = post.markdown || post.content || '';
-      studioState.easyMDE.value(content);
+      // Populate Editor: Use clean markdown, or convert legacy HTML on the fly!
+      let content = post.markdown;
+      if (!content && post.content) {
+        content = cleanWordPressContentToMarkdown(post.content);
+      }
+      studioState.easyMDE.value(content || '');
 
-      el.statusText.textContent = `Editing: ${post.title}`;
+      el.statusText.textContent = `Editing: ${cleanTitle}`;
       el.btnDelete.style.display = 'block';
 
       // Scan post images and add to tray
@@ -805,10 +856,10 @@
       const imgs = doc.querySelectorAll('img');
       imgs.forEach(img => {
         const src = img.getAttribute('src');
-        if (src) addMediaToTray(src, post.title);
+        if (src) addMediaToTray(src, cleanTitle);
       });
 
-      showToast(`Loaded "${post.title}"`);
+      showToast(`Loaded "${cleanTitle}"`);
     }
 
     // Reset Form for New Post

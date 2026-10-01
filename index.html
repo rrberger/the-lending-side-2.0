@@ -17,11 +17,18 @@
   <div class="grain"></div>
 
   <div id="app">
-    <!-- Desktop Navigation Sidebar -->
+    <!-- Navigation Header / Sidebar -->
     <header class="sidebar">
-      <div class="brand">
-        <h1><a href="#home">the lending side<span class="stoplight"></span></a></h1>
-        <p>analog / words / playlists</p>
+      <div class="sidebar-top">
+        <div class="brand">
+          <h1><a href="#home">the lending side<span class="stoplight"></span></a></h1>
+          <p>analog / words / playlists</p>
+        </div>
+        <div class="theme-toggle-container">
+          <button class="theme-btn" id="theme-toggle-btn" aria-label="Toggle light/dark theme">
+            <span id="theme-icon-text">☀ Light Mode</span>
+          </button>
+        </div>
       </div>
 
       <nav class="menu">
@@ -45,26 +52,12 @@
       </div>
 
       <div class="sidebar-footer">
-        <div class="minimal-panel" data-title="system" style="margin-bottom: 0.8rem;">
-          <div class="theme-toggle-container">
-            <button class="theme-btn" id="theme-toggle-btn" aria-label="Toggle light/dark theme">
-              <span id="theme-icon-text">☀ Light Mode</span>
-            </button>
-          </div>
         <div class="copyright">
           &copy; <span id="current-year">2026</span> ryan b.<br>
           all frames analog.
         </div>
       </div>
     </header>
-
-    <!-- Mobile Navigation Bar (Bottom Docked) -->
-    <div class="mobile-nav">
-      <a href="#home" class="mobile-nav-link active" data-target="home">01_blog</a>
-      <a href="#playlists" class="mobile-nav-link" data-target="playlists">02_music</a>
-      <a href="#prints" class="mobile-nav-link" data-target="prints">03_prints</a>
-      <a href="#about" class="mobile-nav-link" data-target="about">04_about</a>
-    </div>
 
     <!-- Main Viewport Context -->
     <main id="main-viewport" class="viewport">

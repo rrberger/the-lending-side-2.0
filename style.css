@@ -238,10 +238,19 @@ header.sidebar {
   transition: border-color var(--transition-speed) var(--ease-in-out), background-color var(--transition-speed) var(--ease-in-out);
 }
 
-.brand {
+.sidebar-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-color);
+}
+
+.brand {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .brand h1 {
@@ -1477,103 +1486,292 @@ main.viewport {
   color: var(--text-color);
 }
 
-/* --- MOBILE RESPONSIVENESS --- */
-@media (max-width: 1024px) {
-  header.sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
-    padding: 1.5rem 1.2rem;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+/* --- MOBILE RESPONSIVENESS (< 960px) --- */
+@media (max-width: 960px) {
+  /* Ensure root layout stacks vertically */
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
   }
-  
-  .brand {
-    margin-bottom: 0;
-    border-bottom: none;
-    padding-bottom: 0;
-  }
-  
-  .brand h1 {
-    font-size: 1.05rem;
-  }
-  
-  nav.menu {
-    display: none;
-  }
-  
-  .layout-switch, .sidebar-footer {
-    display: none;
-  }
-  
-  main.viewport {
-    margin-left: 0;
-  }
-  
-  /* Mobile Bottom Navigation Bar */
-  .mobile-nav {
+
+  #app {
     display: flex !important;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background-color: var(--bg-color);
-    border-top: 1px solid var(--border-color);
-    z-index: 200;
-    justify-content: space-around;
-    padding: 0.8rem 0;
-    backdrop-filter: blur(2px);
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-height: 100vh !important;
+    overflow-x: hidden !important;
   }
-  
-  .mobile-nav a {
-    font-size: 0.7rem;
-    text-transform: lowercase;
-    color: var(--text-muted);
-    padding: 0.3rem 0.5rem;
+
+  /* Header: Clean, Compact Top Navigation (No fixed bottom bar) */
+  header.sidebar {
+    width: 100% !important;
+    max-width: 100vw !important;
+    height: auto !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 1.2rem 1.2rem 0.8rem 1.2rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background-color: var(--bg-color) !important;
+    z-index: 50 !important;
   }
-  
-  .mobile-nav a.active {
-    color: var(--accent-color);
-    border-bottom: 1px solid var(--accent-color);
-    text-shadow: var(--glow-shadow);
+
+  .sidebar-top {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin-bottom: 0.8rem !important;
+    padding-bottom: 0.8rem !important;
+    border-bottom: 1px solid var(--border-color) !important;
   }
-  
-  .film_strip-post {
-    width: 100vw;
-    flex-direction: column;
-    padding: 4rem 1.5rem 8rem 1.5rem;
-    justify-content: flex-start;
+
+  .brand {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
   }
-  
-  .film_strip-meta {
-    width: 100%;
-    padding-right: 0;
-    height: auto;
-    margin-bottom: 2rem;
+
+  .brand h1 {
+    font-size: 1.15rem !important;
+    margin-bottom: 0.2rem !important;
   }
-  
-  .film_strip-meta h2 {
-    font-size: 1.15rem;
-    margin-bottom: 0.6rem;
+
+  .brand p {
+    font-size: 0.65rem !important;
+    letter-spacing: 0.02em !important;
   }
-  
-  .film_strip-gallery {
-    width: 100%;
-    height: auto;
-    overflow-x: auto;
-    overflow-y: hidden;
-    gap: 1.2rem;
+
+  .theme-toggle-container {
+    margin: 0 !important;
   }
-  
-  .film_strip-image-container {
-    height: 48vh;
+
+  .theme-btn {
+    font-size: 0.65rem !important;
+    padding: 0.35rem 0.6rem !important;
+  }
+
+  /* Mobile Horizontal Navigation Strip */
+  nav.menu {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 0 0.5rem 0 !important;
+  }
+
+  nav.menu ul {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 0.5rem 1rem !important;
+    justify-content: flex-start !important;
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  nav.menu a.menu-link {
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0 !important;
+    display: inline-block !important;
+    color: var(--text-muted) !important;
+    border-bottom: 2px solid transparent !important;
+    text-decoration: none !important;
+  }
+
+  nav.menu a.menu-link.active {
+    color: var(--accent-color) !important;
+    border-bottom-color: var(--accent-color) !important;
+    text-shadow: var(--glow-shadow) !important;
+  }
+
+  /* View Switcher */
+  .layout-switch {
+    display: block !important;
+    width: 100% !important;
+    margin-top: 0.3rem !important;
+  }
+
+  .layout-switch .minimal-panel {
+    padding: 0.4rem 0.6rem !important;
+    margin-top: 0.2rem !important;
+  }
+
+  .layout-switch .minimal-panel::before {
+    display: none !important;
+  }
+
+  .switch-btn {
+    font-size: 0.65rem !important;
+    padding: 0.3rem 0.6rem !important;
+  }
+
+  .sidebar-footer {
+    display: none !important;
+  }
+
+  /* COMPLETELY REMOVE FIXED BOTTOM DOCK */
+  .mobile-nav {
+    display: none !important;
+  }
+
+  /* Main Viewport: Centered, Zero Margin, Natural Flow */
+  main.viewport {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-height: auto !important;
+    position: relative !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Journal Prose & Post Detail Views on Mobile */
+  .journal-container,
+  .post-detail-view,
+  .page-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 2rem 1.2rem 4rem 1.2rem !important;
+    box-sizing: border-box !important;
+  }
+
+  .journal-header {
+    margin-bottom: 2.5rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .journal-header h1 {
+    font-size: 1.4rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .journal-post-card {
+    margin-bottom: 3.5rem !important;
+    padding-bottom: 2.5rem !important;
+  }
+
+  .journal-post-header h2 {
+    font-size: 1.3rem !important;
+    line-height: 1.35 !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .journal-post-content {
+    font-size: 0.85rem !important;
+    line-height: 1.75 !important;
+  }
+
+  .journal-post-content p {
+    margin-bottom: 1.2rem !important;
+  }
+
+  /* Photos on Mobile: Full-width, crisp borders, natural scale */
+  .journal-post-content img,
+  .post-detail-view img {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 1.2rem auto !important;
+    display: block !important;
+    box-sizing: border-box !important;
+  }
+
+  .journal-post-content figure {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 1.2rem 0 !important;
+    padding: 0.4rem !important;
+    box-sizing: border-box !important;
+  }
+
+  .journal-post-content figure img {
+    margin: 0 !important;
+  }
+
+  /* Single Column Vertical Galleries on Mobile */
+  .wp-block-gallery,
+  .wp-block-gallery.columns-default,
+  .wp-block-gallery.columns-2 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.2rem !important;
+    margin: 1.2rem 0 !important;
+  }
+
+  /* Grid Index on Mobile */
+  .index-container {
+    padding: 2rem 1.2rem !important;
+  }
+
+  .index-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2rem !important;
+  }
+
+  /* Playlists on Mobile */
+  .playlist-card {
+    flex-direction: column !important;
+  }
+
+  .playlist-info {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 1.2rem !important;
+  }
+
+  .playlist-embed iframe {
+    height: 380px !important;
+  }
+
+  /* Lightbox on Mobile */
+  .lightbox-content {
+    max-width: 98vw !important;
+    max-height: 90vh !important;
+    padding: 0.4rem !important;
+  }
+
+  .lightbox-content img {
+    max-width: 96vw !important;
+    max-height: 82vh !important;
+  }
+
+  .lightbox-prev {
+    left: 0.6rem !important;
+  }
+
+  .lightbox-next {
+    right: 0.6rem !important;
+  }
+
+  .lightbox-close {
+    top: 1rem !important;
+    right: 1rem !important;
+  }
+
+  /* Comment Form on Mobile */
+  .comment-form {
+    padding: 1.2rem !important;
+  }
+
+  .comment-form-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.8rem !important;
+  }
+
+  .comment-submit-btn {
+    width: 100% !important;
+    padding: 0.75rem !important;
   }
 }
 
-/* Hide mobile-nav by default on desktop */
+/* Hide mobile-nav permanently */
 .mobile-nav {
-  display: none;
+  display: none !important;
 }
