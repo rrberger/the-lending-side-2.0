@@ -65,6 +65,17 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
         # Serve the current directory
         super().__init__(*args, directory=DIRECTORY, **kwargs)
 
+    def do_GET(self):
+        # Clean route alias for the authoring studio
+        if self.path in ('/studio', '/studio/'):
+            self.path = '/studio.html'
+        super().do_GET()
+
+    def do_HEAD(self):
+        if self.path in ('/studio', '/studio/'):
+            self.path = '/studio.html'
+        super().do_HEAD()
+
     def do_POST(self):
         # 1. Save / Edit Post Endpoint
         if self.path == '/api/posts':
@@ -75,6 +86,9 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
         # 3. Image Upload Endpoint
         elif self.path == '/api/upload':
             self._handle_upload()
+        # 4. Git Deploy Endpoint
+        elif self.path == '/api/git-deploy':
+            self._handle_git_deploy()
         else:
             self.send_error(404, "Endpoint not found")
 
@@ -269,6 +283,44 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
         else:
             self._send_json({"error": "No file uploaded"}, 400)
 
+    def _handle_git_deploy(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(content_length).decode('utf-8')
+        try:
+            payload = json.loads(body) if body else {}
+        except Exception:
+            payload = {}
+
+        post_title = payload.get('title', 'blog update')
+        commit_msg = f"publish(post): {post_title}"
+
+        import subprocess
+        try:
+            # 1. Stage posts database
+            subprocess.run(["git", "add", "data/posts.json"], check=True, cwd=DIRECTORY)
+            # 2. Commit with post title
+            commit_res = subprocess.run(["git", "commit", "-m", commit_msg], capture_output=True, text=True, cwd=DIRECTORY)
+            # 3. Attempt push to origin master
+            push_res = subprocess.run(["git", "push", "origin", "master"], capture_output=True, text=True, cwd=DIRECTORY)
+            
+            if push_res.returncode == 0:
+                self._send_json({
+                    "status": "success",
+                    "message": "Committed and pushed to GitHub! Cloudflare Pages is now building your new post.",
+                    "details": push_res.stdout or push_res.stderr
+                })
+            else:
+                self._send_json({
+                    "status": "partial",
+                    "message": "Changes committed locally, but push requires GitHub authorization in your terminal.",
+                    "terminal_command": "git push origin master",
+                    "details": push_res.stderr
+                })
+        except subprocess.CalledProcessError as e:
+            self._send_json({"status": "error", "error": f"Git command failed: {str(e)}"}, 500)
+        except Exception as e:
+            self._send_json({"status": "error", "error": str(e)}, 500)
+
     def _send_json(self, data, status_code=200):
         self.send_response(status_code)
         self.send_header('Content-Type', 'application/json')
@@ -283,9 +335,9 @@ if __name__ == '__main__':
     try:
         with socketserver.ThreadingTCPServer(("", PORT), handler) as httpd:
             print(f"==================================================")
-            print(f" THE LENDING SIDE CMS Local API Server Running    ")
-            print(f" Server active at: http://localhost:{PORT}       ")
-            print(f" CMS Dashboard at: http://localhost:{PORT}/#admin ")
+            print(f" THE LENDING SIDE Local Authoring Studio Running ")
+            print(f" Studio URL : http://localhost:{PORT}/studio      ")
+            print(f" Blog Feed  : http://localhost:{PORT}/            ")
             print(f" Press Ctrl+C to terminate                        ")
             print(f"==================================================")
             httpd.serve_forever()
