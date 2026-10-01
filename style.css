@@ -398,27 +398,107 @@ main.viewport {
 }
 
 /* --- VIEW 1: HORIZONTAL FILM_STRIP CANVAS --- */
+.film_strip-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Floating Navigation HUD */
+.film_strip-controls {
+  position: fixed;
+  top: 1.5rem;
+  right: 2rem;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  background-color: rgba(7, 8, 10, 0.92);
+  border: 1px solid var(--border-color-heavy);
+  padding: 0.4rem 0.8rem;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.film-nav-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  letter-spacing: 0.05em;
+}
+
+.film-nav-btn:hover {
+  background-color: var(--text-color);
+  color: var(--bg-color);
+  border-color: var(--text-color);
+}
+
+.film-counter {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent-color);
+  letter-spacing: 0.08em;
+  padding: 0 0.4rem;
+  font-weight: 500;
+  min-width: 60px;
+  text-align: center;
+}
+
+/* Timeline Progress Track */
+.film_strip-progress-track {
+  position: fixed;
+  top: 0;
+  left: 280px;
+  right: 0;
+  height: 2px;
+  background-color: rgba(255, 255, 255, 0.05);
+  z-index: 60;
+}
+
+.film_strip-progress-fill {
+  height: 100%;
+  width: 0%;
+  background-color: var(--accent-color);
+  transition: width 0.1s ease-out;
+}
+
 .film_strip-container {
   display: flex;
   overflow-x: auto;
   overflow-y: hidden;
   height: 100vh;
   scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
   background-color: var(--bg-color);
 }
 
+/* Sleek subtle scrollbar */
 .film_strip-container::-webkit-scrollbar {
-  display: none;
+  display: block;
+  height: 5px;
 }
-.film_strip-container {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.film_strip-container::-webkit-scrollbar-track {
+  background: rgba(12, 14, 16, 0.4);
+}
+.film_strip-container::-webkit-scrollbar-thumb {
+  background: var(--border-color-heavy);
+}
+.film_strip-container::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color);
 }
 
 .film_strip-post {
   flex: 0 0 auto;
-  width: 80vw;
-  max-width: 1000px;
+  width: auto;
+  min-width: 70vw;
+  max-width: 95vw;
   height: 100vh;
   display: flex;
   flex-direction: row;
@@ -430,8 +510,8 @@ main.viewport {
 }
 
 .film_strip-meta {
-  width: 300px;
-  padding-right: 3rem;
+  width: 320px;
+  padding-right: 3.5rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -448,7 +528,7 @@ main.viewport {
 
 .film_strip-meta h2 {
   font-weight: 500;
-  font-size: 1.3rem;
+  font-size: 1.35rem;
   line-height: 1.35;
   margin-bottom: 1rem;
   text-transform: lowercase;
@@ -471,6 +551,7 @@ main.viewport {
   align-self: flex-start;
   color: var(--text-muted);
   transition: all 0.2s ease;
+  text-decoration: none;
 }
 
 .read-more-btn:hover {
@@ -481,21 +562,16 @@ main.viewport {
 
 .film_strip-gallery {
   display: flex;
-  gap: 2rem;
+  gap: 1.5rem;
   height: 100%;
   align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-right: 2rem;
+  overflow: visible;
+  padding-right: 3rem;
   flex-grow: 1;
 }
 
-.film_strip-gallery::-webkit-scrollbar {
-  display: none;
-}
-
 .film_strip-image-container {
-  height: 70vh;
+  height: 68vh;
   flex-shrink: 0;
   position: relative;
   border: 1px solid var(--border-color);
@@ -506,11 +582,12 @@ main.viewport {
 .film_strip-image-container img {
   height: 100%;
   width: auto;
+  max-width: 60vw;
   object-fit: contain;
   display: block;
-  transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease, filter 0.3s ease;
-  opacity: 0.82;
-  filter: saturate(0.92);
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease, filter 0.3s ease;
+  opacity: 0.88;
+  filter: saturate(0.95);
 }
 
 .film_strip-image-container:hover img {
