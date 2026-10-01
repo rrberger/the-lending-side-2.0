@@ -851,15 +851,40 @@
       el.statusText.textContent = `Editing: ${cleanTitle}`;
       el.btnDelete.style.display = 'block';
 
-      // Scan post images and add to tray
-      const doc = new DOMParser().parseFromString(post.content || '', 'text/html');
-      const imgs = doc.querySelectorAll('img');
-      imgs.forEach(img => {
-        const src = img.getAttribute('src');
-        if (src) addMediaToTray(src, cleanTitle);
+      // Clear tray so each post only displays its own photos
+      el.mediaGrid.innerHTML = '';
+      studioState.uploadedImages = [];
+
+      // Scan post images (from markdown, HTML content, and featured_image)
+      const uniqueImages = new Set();
+      if (post.featured_image) {
+        uniqueImages.add(post.featured_image.split('?')[0]);
+      }
+
+      // Check markdown for images (![alt](url))
+      const mdSource = post.markdown || content || '';
+      const mdRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+)\)/g;
+      let m;
+      while ((m = mdRegex.exec(mdSource)) !== null) {
+        if (m[1]) uniqueImages.add(m[1].split('?')[0]);
+      }
+
+      // Check HTML content for images
+      if (post.content) {
+        const doc = new DOMParser().parseFromString(post.content, 'text/html');
+        const imgs = doc.querySelectorAll('img');
+        imgs.forEach(img => {
+          const src = img.getAttribute('data-orig-file') || img.getAttribute('src');
+          if (src) uniqueImages.add(src.split('?')[0]);
+        });
+      }
+
+      // Populate only this post's images into the tray
+      uniqueImages.forEach(src => {
+        addMediaToTray(src, cleanTitle);
       });
 
-      showToast(`Loaded "${cleanTitle}"`);
+      showToast(`Loaded "${cleanTitle}" (${uniqueImages.size} photos)`);
     }
 
     // Reset Form for New Post

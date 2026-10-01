@@ -34,6 +34,8 @@ def clean_post_to_markdown(raw_html):
         pre_cleaned = re.sub(r'</?(figure|div)[^>]*>', '\n', pre_cleaned)
         
         md = h.handle(pre_cleaned)
+        # Strip list bullets from standalone markdown images (* ![alt](url) -> ![alt](url))
+        md = re.sub(r'^\s*[\*\-]\s+(!\[.*?\]\(.*?\))', r'\1', md, flags=re.MULTILINE)
         # Clean excessive blank lines
         md = re.sub(r'\n{3,}', '\n\n', md).strip()
         return md
