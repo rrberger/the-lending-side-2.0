@@ -499,27 +499,28 @@ main.viewport {
 
 .film_strip-post {
   flex: 0 0 auto;
-  width: max-content;
-  height: 100vh;
-  display: flex;
+  display: inline-flex;
   flex-direction: row;
   align-items: center;
-  padding: 0 4rem 0 3rem;
-  border-right: 1px solid var(--border-color);
+  height: 100vh;
   background-color: var(--bg-color);
+  border-right: 2px solid var(--border-color);
+  padding: 0 4rem 0 3.5rem;
 }
 
 .film_strip-meta {
-  flex: 0 0 320px;
-  width: 320px;
-  max-width: 320px;
-  padding-right: 3rem;
+  flex: 0 0 360px;
+  width: 360px;
+  max-width: 360px;
+  margin-right: 3rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  height: 100%;
-  background-color: var(--bg-color);
-  z-index: 2;
+  padding: 2.5rem 2rem;
+  background-color: #0b0e14;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  z-index: 10;
 }
 
 .post-date-mono {
@@ -561,21 +562,20 @@ main.viewport {
 .read-more-btn:hover {
   color: var(--text-color);
   border-color: var(--text-muted);
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .film_strip-gallery {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.8rem;
   height: 100%;
-  padding-right: 1rem;
 }
 
 .film_strip-image-container {
   height: 65vh;
-  max-height: 700px;
+  max-height: 680px;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -583,21 +583,23 @@ main.viewport {
   border: 1px solid var(--border-color);
   cursor: zoom-in;
   background-color: #030405;
-  transition: border-color 0.2s ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
 .film_strip-image-container:hover {
   border-color: var(--text-muted);
+  transform: translateY(-2px);
 }
 
 .film_strip-image-container img {
   height: 100%;
   width: auto;
-  max-width: 80vw;
+  max-width: 75vw;
   object-fit: contain;
   display: block;
-  opacity: 0.9;
-  transition: opacity 0.3s ease, filter 0.3s ease;
+  opacity: 0.92;
+  transition: opacity 0.3s ease;
 }
 
 .film_strip-image-container:hover img {
