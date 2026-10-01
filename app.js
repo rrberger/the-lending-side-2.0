@@ -557,6 +557,42 @@ function renderPostDetail(slug) {
       <div class="journal-post-content">
         ${post.content}
       </div>
+
+      <!-- Comments Section -->
+      <section class="comments-section" id="comments-section">
+        <div class="comments-header">
+          <span class="post-date-mono">// DISCUSSION</span>
+          <h3>comments (<span id="comments-count">0</span>)</h3>
+        </div>
+
+        <!-- Comments List -->
+        <div class="comments-list" id="comments-list">
+          <div class="comments-loading">> FETCHING_COMMENTS...</div>
+        </div>
+
+        <!-- Add Comment Form -->
+        <form class="comment-form" id="comment-form">
+          <span class="comment-form-title">leave a note / thought</span>
+          
+          <!-- Bot Honeypot (Invisible) -->
+          <input type="text" name="website_hp" id="comment-hp" style="display:none;" tabindex="-1" autocomplete="off">
+
+          <div class="comment-form-group">
+            <input type="text" id="comment-author" placeholder="your name..." required maxlength="60" autocomplete="name">
+          </div>
+
+          <div class="comment-form-group">
+            <textarea id="comment-content" rows="4" placeholder="share your reaction, photo questions, or thoughts..." required maxlength="2000"></textarea>
+          </div>
+
+          <div class="comment-form-actions">
+            <!-- Cloudflare Turnstile Container -->
+            <div id="turnstile-container"></div>
+            <button type="submit" class="comment-submit-btn" id="comment-submit-btn">post comment</button>
+          </div>
+          <div class="comment-status" id="comment-status"></div>
+        </form>
+      </section>
     </article>
   `;
   
@@ -587,6 +623,163 @@ function renderPostDetail(slug) {
       e.stopPropagation();
       openLightboxGlobal(allImageUrls, idx);
     });
+  });
+
+  // Initialize Cloudflare Native Comments
+  initComments(slug);
+}
+
+// --- COMMENTS SYSTEM (Cloudflare Turnstile + D1) ---
+const TURNSTILE_SITE_KEY = '0x4AAAAAAFKwqUaas_zRbXql';
+let currentTurnstileWidgetId = null;
+
+async function initComments(slug) {
+  const listEl = document.getElementById('comments-list');
+  const countEl = document.getElementById('comments-count');
+  const formEl = document.getElementById('comment-form');
+  const statusEl = document.getElementById('comment-status');
+  const submitBtn = document.getElementById('comment-submit-btn');
+
+  if (!listEl || !formEl) return;
+
+  // 1. Fetch existing comments
+  try {
+    const res = await fetch(`/api/comments?slug=${encodeURIComponent(slug)}`);
+    if (res.ok) {
+      const data = await res.json();
+      const comments = data.comments || [];
+      if (countEl) countEl.textContent = comments.length;
+      
+      if (comments.length === 0) {
+        listEl.innerHTML = `<div class="comment-empty">> no comments yet. be the first to leave a thought.</div>`;
+      } else {
+        listEl.innerHTML = comments.map(c => {
+          const dateStr = new Date(c.created_at).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          }).toLowerCase();
+          return `
+            <div class="comment-card">
+              <div class="comment-meta">
+                <span class="comment-author">${c.author_name}</span>
+                <span class="comment-date">[ ${dateStr} ]</span>
+              </div>
+              <div class="comment-body">${c.content}</div>
+            </div>
+          `;
+        }).join('');
+      }
+    } else {
+      listEl.innerHTML = `<div class="comment-empty">> comments unavailable at this time.</div>`;
+    }
+  } catch (err) {
+    listEl.innerHTML = `<div class="comment-empty">> comments unavailable.</div>`;
+  }
+
+  // 2. Render Turnstile Widget
+  const turnstileContainer = document.getElementById('turnstile-container');
+  if (turnstileContainer && window.turnstile) {
+    try {
+      if (currentTurnstileWidgetId !== null) {
+        window.turnstile.remove(currentTurnstileWidgetId);
+        currentTurnstileWidgetId = null;
+      }
+      currentTurnstileWidgetId = window.turnstile.render('#turnstile-container', {
+        sitekey: TURNSTILE_SITE_KEY,
+        theme: state.currentTheme === 'light' ? 'light' : 'dark',
+        size: 'flexible'
+      });
+    } catch (e) {
+      console.warn("Turnstile init deferred:", e);
+    }
+  }
+
+  // 3. Form Submit Handler
+  formEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (statusEl) {
+      statusEl.textContent = '';
+      statusEl.className = 'comment-status';
+    }
+
+    const author = document.getElementById('comment-author').value.trim();
+    const content = document.getElementById('comment-content').value.trim();
+    const hp = document.getElementById('comment-hp').value;
+
+    let turnstileToken = '';
+    if (window.turnstile && currentTurnstileWidgetId !== null) {
+      turnstileToken = window.turnstile.getResponse(currentTurnstileWidgetId);
+      if (!turnstileToken) {
+        if (statusEl) {
+          statusEl.textContent = '> please complete the security check above.';
+          statusEl.className = 'comment-status error';
+        }
+        return;
+      }
+    }
+
+    if (submitBtn) submitBtn.disabled = true;
+    if (statusEl) statusEl.textContent = '> posting comment...';
+
+    try {
+      const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          post_slug: slug,
+          author_name: author,
+          content: content,
+          turnstile_token: turnstileToken,
+          honeypot: hp
+        })
+      });
+
+      const outcome = await res.json();
+      if (res.ok && outcome.status === 'success') {
+        if (statusEl) {
+          statusEl.textContent = '> comment posted successfully!';
+          statusEl.className = 'comment-status success';
+        }
+        document.getElementById('comment-content').value = '';
+
+        // Reset Turnstile
+        if (window.turnstile && currentTurnstileWidgetId !== null) {
+          window.turnstile.reset(currentTurnstileWidgetId);
+        }
+
+        // Prepend comment to list
+        const emptyNotice = listEl.querySelector('.comment-empty');
+        if (emptyNotice) listEl.innerHTML = '';
+
+        const newCommentHtml = `
+          <div class="comment-card" style="border-color:var(--accent-color);">
+            <div class="comment-meta">
+              <span class="comment-author">${outcome.comment ? outcome.comment.author_name : author}</span>
+              <span class="comment-date">[ just now ]</span>
+            </div>
+            <div class="comment-body">${outcome.comment ? outcome.comment.content : content}</div>
+          </div>
+        `;
+        listEl.insertAdjacentHTML('beforeend', newCommentHtml);
+        if (countEl) {
+          const currentCount = parseInt(countEl.textContent) || 0;
+          countEl.textContent = currentCount + 1;
+        }
+      } else {
+        if (statusEl) {
+          statusEl.textContent = `> error: ${outcome.error || 'could not post comment'}`;
+          statusEl.className = 'comment-status error';
+        }
+      }
+    } catch (err) {
+      if (statusEl) {
+        statusEl.textContent = `> network error: ${err.message}`;
+        statusEl.className = 'comment-status error';
+      }
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
   });
 }
 
