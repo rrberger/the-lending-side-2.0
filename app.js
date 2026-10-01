@@ -164,10 +164,6 @@ function handleRoute() {
       elements.layoutSwitcher.style.display = 'none';
       renderAbout();
       break;
-    case '#admin':
-      elements.layoutSwitcher.style.display = 'none';
-      renderAdminDashboard();
-      break;
     default:
       elements.layoutSwitcher.style.display = 'none';
       renderHome();
