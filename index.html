@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="personal photography, analog frames, words, playlists, and prints by ryan berger.">
+  <meta name="description" content="personal photography, words, and playlists by ryan b.">
   <title>the lending side — photographs / words / playlists</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
   <!-- Film Grain Overlay -->
@@ -48,11 +50,12 @@
             </button>
           </div>
           <!-- Admin CMS Dashboard Link -->
-          <a href="#admin" class="theme-btn menu-link" data-target="admin" style="display: block; text-align: center; margin-top: 0.4rem;">
+          <a href="#admin" class="theme-btn menu-link" data-target="admin"
+            style="display: block; text-align: center; margin-top: 0.4rem;">
             [ admin_dashboard ]
           </a>
         </div>
-        
+
         <div class="copyright">
           &copy; <span id="current-year">2026</span> ryan berger.<br>
           all frames analog.
@@ -79,18 +82,24 @@
   <!-- Fullscreen Immersive Lightbox -->
   <div id="lightbox" class="lightbox">
     <button class="lightbox-close" id="lightbox-close" aria-label="Close lightbox">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
     </button>
     <button class="lightbox-nav lightbox-prev" id="lightbox-prev" aria-label="Previous image">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
     </button>
     <button class="lightbox-nav lightbox-next" id="lightbox-next" aria-label="Next image">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
     </button>
     <div class="lightbox-content">
       <img id="lightbox-img" src="" alt="Expanded Photograph">
       <div class="lightbox-caption">
-      <div class="minimal-panel" style="padding: 0.6rem 1rem; margin-top: 0.4rem; border: none; background: none;">
+        <div class="minimal-panel" style="padding: 0.6rem 1rem; margin-top: 0.4rem; border: none; background: none;">
           <div id="lightbox-title" class="lightbox-title"></div>
           <div id="lightbox-exif" class="lightbox-exif"></div>
         </div>
@@ -102,13 +111,15 @@
   <div id="inquiry-modal" class="inquiry-modal">
     <div class="inquiry-content">
       <button id="inquiry-close" class="inquiry-close" aria-label="Close inquiry window">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
       </button>
-      
+
       <div class="minimal-panel" style="margin-top: 0.5rem;">
         <h2>Print Inquiry</h2>
         <p>Signed, dated, and numbered prints. Printed at home by me.</p>
-        
+
         <div class="inquiry-photo-preview">
           <img id="inquiry-img" src="" alt="Selected Photo for print">
           <div class="inquiry-photo-info">
@@ -116,7 +127,7 @@
             <span>Custom Archival Print</span>
           </div>
         </div>
-        
+
         <form id="inquiry-form">
           <div class="inquiry-form-group">
             <label for="print-size">Dimensions / Pricing</label>
@@ -158,4 +169,5 @@
   <!-- ES6 App Controller -->
   <script type="module" src="app.js"></script>
 </body>
+
 </html>

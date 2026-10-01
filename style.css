@@ -519,27 +519,8 @@ main.viewport {
   transform: scale(1.015);
 }
 
-/* EXIF HUD Overlay */
 .exif-hud {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background-color: rgba(9, 10, 12, 0.9);
-  border-top: 1px solid var(--border-color);
-  padding: 0.6rem 0.8rem;
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.8rem;
-}
-
-.film_strip-image-container:hover .exif-hud {
-  opacity: 1;
+  display: none !important;
 }
 
 /* --- VIEW 2: JOURNAL (PROSE) VIEW --- */
@@ -663,14 +644,7 @@ main.viewport {
 }
 
 .inline-exif {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  text-align: center;
-  margin-top: 0.6rem;
-  text-transform: lowercase;
-  letter-spacing: 0.02em;
-  border-top: 1px dotted var(--border-color);
-  padding-top: 0.4rem;
+  display: none !important;
 }
 
 /* --- VIEW 3: GRID INDEX VIEW --- */
@@ -1049,29 +1023,33 @@ main.viewport {
 
 .lightbox-content {
   position: relative;
-  max-width: 80%;
-  max-height: 80vh;
+  max-width: 95vw;
+  max-height: 95vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--border-color);
-  padding: 1.2rem;
-  background-color: #030405;
+  padding: 0.8rem;
+  background-color: rgba(3, 4, 5, 0.95);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9);
 }
 
 .lightbox-content img {
-  max-width: 100%;
-  max-height: 65vh;
+  max-width: 92vw;
+  max-height: 87vh;
+  width: auto;
+  height: auto;
   object-fit: contain;
+  border: 1px solid var(--border-color);
+  cursor: zoom-out;
 }
 
 .lightbox-caption {
-  margin-top: 0.8rem;
+  margin-top: 0.5rem;
   text-align: center;
   width: 100%;
-  border-top: 1px dotted var(--border-color);
-  padding-top: 0.6rem;
+  padding-top: 0.3rem;
 }
 
 .lightbox-title {
@@ -1079,13 +1057,11 @@ main.viewport {
   font-weight: 500;
   margin-bottom: 0.2rem;
   text-transform: lowercase;
+  color: var(--text-muted);
 }
 
 .lightbox-exif {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  text-transform: lowercase;
-  letter-spacing: 0.02em;
+  display: none !important;
 }
 
 /* Lightbox Nav Buttons */

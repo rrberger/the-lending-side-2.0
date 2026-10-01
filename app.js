@@ -231,11 +231,15 @@ function parseImagesFromHTML(htmlContent) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlContent, 'text/html');
   const imgElements = doc.querySelectorAll('img');
-  return Array.from(imgElements).map(img => ({
-    src: img.getAttribute('src'),
-    alt: img.getAttribute('alt') || '',
-    title: img.getAttribute('data-image-title') || img.getAttribute('alt') || 'Photograph'
-  }));
+  return Array.from(imgElements).map(img => {
+    const rawSrc = img.getAttribute('data-orig-file') || img.getAttribute('src') || '';
+    const cleanSrc = rawSrc.split('?')[0];
+    return {
+      src: cleanSrc,
+      alt: img.getAttribute('alt') || '',
+      title: img.getAttribute('data-image-title') || img.getAttribute('alt') || 'Photograph'
+    };
+  });
 }
 
 // Loading UI
@@ -306,11 +310,9 @@ function renderFilmStripView() {
     `;
     
     images.forEach((img, imgIdx) => {
-      const exifStr = getExifString(img.src);
       html += `
         <div class="film_strip-image-container" data-post-idx="${postIdx}" data-img-idx="${imgIdx}">
           <img src="${img.src}" alt="${img.alt}" loading="lazy">
-          ${exifStr ? `<div class="exif-hud">${exifStr}</div>` : ''}
         </div>
       `;
     });
@@ -358,28 +360,6 @@ function renderJournalView() {
     }).toLowerCase();
     
     let processedContent = post.content;
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(processedContent, 'text/html');
-    const images = doc.querySelectorAll('img');
-    
-    images.forEach(img => {
-      const src = img.getAttribute('src');
-      const exifStr = getExifString(src);
-      if (exifStr) {
-        const parentFigure = img.closest('figure');
-        const exifDiv = doc.createElement('div');
-        exifDiv.className = 'inline-exif';
-        exifDiv.textContent = exifStr;
-        
-        if (parentFigure) {
-          parentFigure.appendChild(exifDiv);
-        } else {
-          img.parentNode.insertBefore(exifDiv, img.nextSibling);
-        }
-      }
-    });
-    
-    processedContent = doc.body.innerHTML;
     
     html += `
       <article class="journal-post-card">
@@ -399,14 +379,28 @@ function renderJournalView() {
   
   // Bind Lightbox triggers on journal images
   const journalImages = elements.viewContent.querySelectorAll('.journal-post-content img');
-  const allImageUrls = Array.from(journalImages).map(img => ({
-    src: img.getAttribute('src'),
-    alt: img.getAttribute('alt') || '',
-    title: 'Photograph'
-  }));
+  const allImageUrls = Array.from(journalImages).map(img => {
+    const rawSrc = img.getAttribute('data-orig-file') || img.getAttribute('src') || '';
+    const cleanSrc = rawSrc.split('?')[0];
+    return {
+      src: cleanSrc,
+      alt: img.getAttribute('alt') || '',
+      title: img.getAttribute('data-image-title') || img.getAttribute('alt') || 'Photograph'
+    };
+  });
   
   journalImages.forEach((img, idx) => {
-    img.addEventListener('click', () => {
+    img.style.cursor = 'zoom-in';
+    const parentA = img.closest('a');
+    if (parentA) {
+      parentA.addEventListener('click', (e) => {
+        e.preventDefault();
+        openLightboxGlobal(allImageUrls, idx);
+      });
+    }
+    img.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       openLightboxGlobal(allImageUrls, idx);
     });
   });
@@ -473,30 +467,6 @@ function renderPostDetail(slug) {
     day: 'numeric'
   }).toLowerCase();
   
-  let processedContent = post.content;
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(processedContent, 'text/html');
-  const images = doc.querySelectorAll('img');
-  
-  images.forEach(img => {
-    const src = img.getAttribute('src');
-    const exifStr = getExifString(src);
-    if (exifStr) {
-      const parentFigure = img.closest('figure');
-      const exifDiv = doc.createElement('div');
-      exifDiv.className = 'inline-exif';
-      exifDiv.textContent = exifStr;
-      
-      if (parentFigure) {
-        parentFigure.appendChild(exifDiv);
-      } else {
-        img.parentNode.insertBefore(exifDiv, img.nextSibling);
-      }
-    }
-  });
-  
-  processedContent = doc.body.innerHTML;
-  
   let html = `
     <article class="post-detail-view">
       <a href="#home" class="back-link">&larr; BACK_TO_FEED</a>
@@ -505,7 +475,7 @@ function renderPostDetail(slug) {
         <h1 style="font-size:2rem; font-weight:600; margin-top:0.5rem; color:var(--accent-color);">${post.title}</h1>
       </header>
       <div class="journal-post-content">
-        ${processedContent}
+        ${post.content}
       </div>
     </article>
   `;
@@ -513,14 +483,28 @@ function renderPostDetail(slug) {
   elements.viewContent.innerHTML = html;
   
   const postImages = elements.viewContent.querySelectorAll('.journal-post-content img');
-  const allImageUrls = Array.from(postImages).map(img => ({
-    src: img.getAttribute('src'),
-    alt: img.getAttribute('alt') || '',
-    title: post.title
-  }));
+  const allImageUrls = Array.from(postImages).map(img => {
+    const rawSrc = img.getAttribute('data-orig-file') || img.getAttribute('src') || '';
+    const cleanSrc = rawSrc.split('?')[0];
+    return {
+      src: cleanSrc,
+      alt: img.getAttribute('alt') || '',
+      title: img.getAttribute('data-image-title') || post.title || 'Photograph'
+    };
+  });
   
   postImages.forEach((img, idx) => {
-    img.addEventListener('click', () => {
+    img.style.cursor = 'zoom-in';
+    const parentA = img.closest('a');
+    if (parentA) {
+      parentA.addEventListener('click', (e) => {
+        e.preventDefault();
+        openLightboxGlobal(allImageUrls, idx);
+      });
+    }
+    img.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       openLightboxGlobal(allImageUrls, idx);
     });
   });
@@ -682,8 +666,9 @@ function updateLightboxContent() {
   elements.lightboxImg.alt = currentImg.alt;
   elements.lightboxTitle.textContent = currentImg.title.toLowerCase();
   
-  const exifStr = getExifString(currentImg.src);
-  elements.lightboxExif.textContent = exifStr || 'NO EXIF METADATA FILED';
+  if (elements.lightboxExif) {
+    elements.lightboxExif.textContent = '';
+  }
   
   const hasMultiple = state.lightboxImages.length > 1;
   elements.lightboxPrev.style.display = hasMultiple ? 'flex' : 'none';
