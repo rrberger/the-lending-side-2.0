@@ -403,6 +403,7 @@ main.viewport {
   width: 100%;
   height: 100vh;
   overflow: hidden;
+  background-color: var(--bg-color);
 }
 
 /* Floating Navigation HUD */
@@ -414,11 +415,11 @@ main.viewport {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  background-color: rgba(7, 8, 10, 0.92);
+  background-color: rgba(7, 8, 10, 0.94);
   border: 1px solid var(--border-color-heavy);
   padding: 0.4rem 0.8rem;
   backdrop-filter: blur(8px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
 }
 
 .film-nav-btn {
@@ -471,10 +472,11 @@ main.viewport {
 
 .film_strip-container {
   display: flex;
+  flex-direction: row;
   overflow-x: auto;
   overflow-y: hidden;
   height: 100vh;
-  scroll-snap-type: x mandatory;
+  width: 100%;
   scroll-behavior: smooth;
   background-color: var(--bg-color);
 }
@@ -482,13 +484,14 @@ main.viewport {
 /* Sleek subtle scrollbar */
 .film_strip-container::-webkit-scrollbar {
   display: block;
-  height: 5px;
+  height: 6px;
 }
 .film_strip-container::-webkit-scrollbar-track {
-  background: rgba(12, 14, 16, 0.4);
+  background: var(--card-bg);
 }
 .film_strip-container::-webkit-scrollbar-thumb {
   background: var(--border-color-heavy);
+  border-radius: 2px;
 }
 .film_strip-container::-webkit-scrollbar-thumb:hover {
   background: var(--accent-color);
@@ -496,27 +499,27 @@ main.viewport {
 
 .film_strip-post {
   flex: 0 0 auto;
-  width: auto;
-  min-width: 70vw;
-  max-width: 95vw;
+  width: max-content;
   height: 100vh;
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 3rem 4rem;
-  scroll-snap-align: start;
+  padding: 0 4rem 0 3rem;
   border-right: 1px solid var(--border-color);
-  position: relative;
+  background-color: var(--bg-color);
 }
 
 .film_strip-meta {
+  flex: 0 0 320px;
   width: 320px;
-  padding-right: 3.5rem;
+  max-width: 320px;
+  padding-right: 3rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
   height: 100%;
-  flex-shrink: 0;
+  background-color: var(--bg-color);
+  z-index: 2;
 }
 
 .post-date-mono {
@@ -534,6 +537,7 @@ main.viewport {
   text-transform: lowercase;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.6rem;
+  color: var(--text-color);
 }
 
 .film_strip-meta .excerpt {
@@ -562,38 +566,42 @@ main.viewport {
 
 .film_strip-gallery {
   display: flex;
+  flex-direction: row;
+  align-items: center;
   gap: 1.5rem;
   height: 100%;
-  align-items: center;
-  overflow: visible;
-  padding-right: 3rem;
-  flex-grow: 1;
+  padding-right: 1rem;
 }
 
 .film_strip-image-container {
-  height: 68vh;
-  flex-shrink: 0;
-  position: relative;
+  height: 65vh;
+  max-height: 700px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--border-color);
   cursor: zoom-in;
   background-color: #030405;
+  transition: border-color 0.2s ease;
+}
+
+.film_strip-image-container:hover {
+  border-color: var(--text-muted);
 }
 
 .film_strip-image-container img {
   height: 100%;
   width: auto;
-  max-width: 60vw;
+  max-width: 80vw;
   object-fit: contain;
   display: block;
-  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease, filter 0.3s ease;
-  opacity: 0.88;
-  filter: saturate(0.95);
+  opacity: 0.9;
+  transition: opacity 0.3s ease, filter 0.3s ease;
 }
 
 .film_strip-image-container:hover img {
   opacity: 1;
-  filter: saturate(1.05);
-  transform: scale(1.015);
 }
 
 .exif-hud {

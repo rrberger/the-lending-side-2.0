@@ -355,7 +355,10 @@ function renderFilmStripView() {
     if (index < 0) index = 0;
     if (index >= postElements.length) index = postElements.length - 1;
     currentPostIndex = index;
-    postElements[currentPostIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+    const target = postElements[currentPostIndex];
+    if (target && canvas) {
+      canvas.scrollTo({ left: target.offsetLeft, behavior: 'smooth' });
+    }
   }
 
   if (btnPrev) btnPrev.addEventListener('click', () => scrollToPost(currentPostIndex - 1));
