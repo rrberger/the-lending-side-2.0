@@ -277,7 +277,25 @@ function renderHome() {
 
 // A. Film_strip horizontal scroll view
 function renderFilmStripView() {
-  let html = `<div class="film_strip-container" id="film_strip-canvas">`;
+  const totalPosts = state.posts.length;
+  let html = `
+    <div class="film_strip-wrapper">
+      <!-- Film Strip HUD Navigation Dock -->
+      <div class="film_strip-controls" id="film-controls">
+        <button class="film-nav-btn" id="film-prev" aria-label="Previous entry" title="Previous post (Left Arrow)">&larr; PREV</button>
+        <div class="film-counter" id="film-counter">
+          <span class="film-counter-idx">01</span> / <span class="film-counter-total">${String(totalPosts).padStart(2, '0')}</span>
+        </div>
+        <button class="film-nav-btn" id="film-next" aria-label="Next entry" title="Next post (Right Arrow)">NEXT &rarr;</button>
+      </div>
+
+      <!-- Timeline Progress Indicator -->
+      <div class="film_strip-progress-track">
+        <div class="film_strip-progress-fill" id="film-progress"></div>
+      </div>
+
+      <div class="film_strip-container" id="film_strip-canvas">
+  `;
   
   state.posts.forEach((post, postIdx) => {
     const images = parseImagesFromHTML(post.content);
@@ -295,12 +313,12 @@ function renderFilmStripView() {
     }).toLowerCase();
     
     html += `
-      <section class="film_strip-post" data-post-idx="${postIdx}">
+      <section class="film_strip-post" data-post-idx="${postIdx}" id="film-post-${postIdx}">
         <div class="film_strip-meta">
           <span class="post-date-mono">[ ${formattedDate} ]</span>
           <h2>${post.title}</h2>
           <div class="excerpt">${post.excerpt || ''}</div>
-          <a href="#post/${post.slug}" class="read-more-btn">READ_ENTRY</a>
+          <a href="#post/${post.slug}" class="read-more-btn">READ_ENTRY &rarr;</a>
         </div>
         <div class="film_strip-gallery">
     `;
@@ -319,20 +337,77 @@ function renderFilmStripView() {
     `;
   });
   
-  html += `</div>`;
+  html += `
+      </div>
+    </div>
+  `;
   elements.viewContent.innerHTML = html;
   
-  // Convert vertical scroll wheel to horizontal
   const canvas = document.getElementById('film_strip-canvas');
+  const postElements = elements.viewContent.querySelectorAll('.film_strip-post');
+  const counterEl = document.getElementById('film-counter');
+  const progressEl = document.getElementById('film-progress');
+  const btnPrev = document.getElementById('film-prev');
+  const btnNext = document.getElementById('film-next');
+  let currentPostIndex = 0;
+
+  function scrollToPost(index) {
+    if (index < 0) index = 0;
+    if (index >= postElements.length) index = postElements.length - 1;
+    currentPostIndex = index;
+    postElements[currentPostIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+  }
+
+  if (btnPrev) btnPrev.addEventListener('click', () => scrollToPost(currentPostIndex - 1));
+  if (btnNext) btnNext.addEventListener('click', () => scrollToPost(currentPostIndex + 1));
+
+  // Convert vertical scroll wheel to horizontal
   if (canvas) {
     canvas.addEventListener('wheel', (e) => {
-      if (e.deltaY !== 0) {
-        canvas.scrollLeft += e.deltaY * 1.5;
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        canvas.scrollLeft += e.deltaY * 1.2;
         e.preventDefault();
       }
     }, { passive: false });
+
+    // Track active post and update counter & progress
+    canvas.addEventListener('scroll', () => {
+      const canvasLeft = canvas.getBoundingClientRect().left;
+      let closestIdx = 0;
+      let minDiff = Infinity;
+      postElements.forEach((el, idx) => {
+        const diff = Math.abs(el.getBoundingClientRect().left - canvasLeft);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestIdx = idx;
+        }
+      });
+      currentPostIndex = closestIdx;
+      if (counterEl) {
+        const idxSpan = counterEl.querySelector('.film-counter-idx');
+        if (idxSpan) idxSpan.textContent = String(closestIdx + 1).padStart(2, '0');
+      }
+      if (progressEl) {
+        const maxScroll = canvas.scrollWidth - canvas.clientWidth;
+        const pct = maxScroll > 0 ? (canvas.scrollLeft / maxScroll) * 100 : 0;
+        progressEl.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+      }
+    }, { passive: true });
   }
-  
+
+  // Keyboard navigation
+  const handleKeyNavigation = (e) => {
+    if (state.currentViewMode !== 'film_strip' || window.location.hash.startsWith('#post')) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      scrollToPost(currentPostIndex + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      scrollToPost(currentPostIndex - 1);
+    }
+  };
+  window.removeEventListener('keydown', window._filmKeyHandler);
+  window._filmKeyHandler = handleKeyNavigation;
+  window.addEventListener('keydown', window._filmKeyHandler);
+
   // Bind Lightbox clicks
   const imageContainers = elements.viewContent.querySelectorAll('.film_strip-image-container');
   imageContainers.forEach(container => {
@@ -735,480 +810,6 @@ Thank you!`;
   
   elements.inquiryForm.reset();
   closeInquiry();
-}
-
-
-// --- CMS ADMIN DASHBOARD ---
-
-function renderAdminDashboard() {
-  let html = `
-    <div class="admin-container">
-      <div class="admin-header">
-        <h1>CMS // POSTS_DATABASE</h1>
-        <div class="admin-actions">
-          <button class="btn btn-primary" id="btn-new-post">[ COMPOSE_NEW_POST ]</button>
-        </div>
-      </div>
-      
-      <div class="minimal-panel" style="margin-bottom: 2rem; margin-top: 0;">
-        <div class="panel-header">system_log</div>
-        <span style="color:var(--text-muted)">database_status:</span> ok // 
-        <span style="color:var(--text-muted)">posts_count:</span> ${state.posts.length} // 
-        <span style="color:var(--text-muted)">exif_count:</span> ${Object.keys(state.exifMap).length}
-      </div>
-      
-      <div class="admin-list">
-  `;
-  
-  state.posts.forEach(post => {
-    const dateStr = new Date(post.date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-    
-    html += `
-      <div class="admin-post-row" data-id="${post.id}">
-        <div>
-          <h3 class="admin-post-title">${post.title}</h3>
-          <span class="admin-post-date">${dateStr} | slug: ${post.slug}</span>
-        </div>
-        <div style="display:flex; gap:0.5rem;">
-          <button class="btn btn-edit" data-id="${post.id}">EDIT</button>
-          <button class="btn btn-danger btn-delete" data-id="${post.id}">DELETE</button>
-        </div>
-      </div>
-    `;
-  });
-  
-  html += `
-      </div>
-    </div>
-  `;
-  
-  elements.viewContent.innerHTML = html;
-  
-  // Bind Admin Dashboard Button Click Listeners
-  document.getElementById('btn-new-post').addEventListener('click', () => {
-    openPostEditor(null);
-  });
-  
-  elements.viewContent.querySelectorAll('.btn-edit').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const postId = parseInt(btn.getAttribute('data-id'));
-      const post = state.posts.find(p => p.id === postId);
-      openPostEditor(post);
-    });
-  });
-  
-  elements.viewContent.querySelectorAll('.btn-delete').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const postId = parseInt(btn.getAttribute('data-id'));
-      const post = state.posts.find(p => p.id === postId);
-      showConfirm(`ARE YOU SURE YOU WANT TO PERMANENTLY WIPE POST: "${post.title.toUpperCase()}"?`, (confirmed) => {
-        if (confirmed) {
-          deletePost(postId);
-        }
-      });
-    });
-  });
-}
-
-// Delete Post API Call
-async function deletePost(postId) {
-  try {
-    const response = await fetch('/api/posts/delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: postId })
-    });
-    
-    const result = await response.json();
-    if (result.status === 'success') {
-      alert('DATABASE ACTION SUCCESSFUL: POST WIPED.');
-      await fetchDatabase();
-      renderAdminDashboard();
-    } else {
-      alert('API ERROR: ' + result.error);
-    }
-  } catch (error) {
-    console.error('Delete call failed:', error);
-    alert('SERVER CONNECTION REFUSED. Ensure python server.py is running.');
-  }
-}
-
-// Open Form Post Editor
-function openPostEditor(post = null) {
-  state.activeEditorPost = post;
-  state.editorUploadedImages = post ? parseImagesFromHTML(post.content).map(img => img.src) : [];
-  
-  const isNew = !post;
-  const titleVal = post ? post.title : '';
-  const slugVal = post ? post.slug : '';
-  const excerptVal = post ? post.excerpt : '';
-  const contentVal = post ? post.content : '';
-  
-  // Format Date for Date HTML input (yyyy-MM-dd)
-  let dateVal = new Date().toISOString().split('T')[0];
-  if (post && post.date) {
-    dateVal = new Date(post.date).toISOString().split('T')[0];
-  }
-  
-  let html = `
-    <div class="admin-container">
-      <div class="admin-header">
-        <h1>${isNew ? 'CMS // COMPOSE_NEW_ENTRY' : 'CMS // EDIT_ENTRY'}</h1>
-        <button class="btn" id="btn-editor-back">&larr; ABORT</button>
-      </div>
-      
-      <div class="minimal-panel">
-        <div class="panel-header">entry_editor</div>
-        <form class="editor-form" id="editor-form">
-          <div class="editor-row">
-            <div class="form-group">
-              <label for="edit-title">Post Title</label>
-              <input type="text" id="edit-title" value="${titleVal.replace(/"/g, '&quot;')}" placeholder="there's no way out but through" required>
-            </div>
-            <div class="form-group">
-              <label for="edit-slug">URL Slug</label>
-              <input type="text" id="edit-slug" value="${slugVal}" placeholder="theres-no-way-out-but-through" required>
-            </div>
-          </div>
-          
-          <div class="editor-row">
-            <div class="form-group">
-              <label for="edit-date">Post Date</label>
-              <input type="date" id="edit-date" value="${dateVal}" required>
-            </div>
-            <div class="form-group">
-              <label for="edit-featured">Featured Image URL (Index cover)</label>
-              <select id="edit-featured">
-                <option value="">[ Select an image below after upload ]</option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="edit-excerpt">Short Summary Excerpt</label>
-            <input type="text" id="edit-excerpt" value="${excerptVal.replace(/"/g, '&quot;')}" placeholder="Brief intro to display on lists...">
-          </div>
-          
-          <!-- Image upload Dropzone -->
-          <div class="form-group">
-            <label>Upload photography assets</label>
-            <div class="upload-zone" id="upload-zone">
-              <p>DRAG & DROP PHOTOGRAPH FILES HERE or CLICK TO CHOOSE</p>
-              <input type="file" id="file-uploader" multiple accept="image/*" style="display:none;">
-            </div>
-            <div class="uploaded-images-preview" id="upload-preview-container">
-              <!-- Render uploaded images manager here -->
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="edit-content">Post content (HTML / Gutenberg format)</label>
-            <textarea id="edit-content" rows="12" placeholder="Write prose paragraphs <p>...</p> and drag images above to insert reference tags..." required>${contentVal}</textarea>
-          </div>
-          
-          <div style="display:flex; gap:1rem; justify-content:flex-end; margin-top:1rem;">
-            <button type="button" class="btn" id="btn-editor-cancel">DISCARD_CHANGES</button>
-            <button type="submit" class="btn btn-primary">[ SAVE_AND_COMMIT_ENTRY ]</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  `;
-  
-  elements.viewContent.innerHTML = html;
-  
-  // Set up uploader previews and bindings
-  updateUploaderPreviews();
-  
-  // Auto slug generation helper
-  const titleInput = document.getElementById('edit-title');
-  const slugInput = document.getElementById('edit-slug');
-  titleInput.addEventListener('input', () => {
-    if (isNew) {
-      slugInput.value = titleInput.value
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-');
-    }
-  });
-  
-  // Back & Discard buttons
-  document.getElementById('btn-editor-back').addEventListener('click', confirmDiscard);
-  document.getElementById('btn-editor-cancel').addEventListener('click', confirmDiscard);
-  
-  function confirmDiscard() {
-    showConfirm("ABORT EDITOR? ALL UNSAVED CHANGES WILL BE LOST.", (confirmed) => {
-      if (confirmed) {
-        renderAdminDashboard();
-      }
-    });
-  }
-  
-  // Drag & drop file uploads trigger
-  const uploadZone = document.getElementById('upload-zone');
-  const fileUploader = document.getElementById('file-uploader');
-  
-  uploadZone.addEventListener('click', () => fileUploader.click());
-  
-  fileUploader.addEventListener('change', () => {
-    handleFileUpload(fileUploader.files);
-  });
-  
-  uploadZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadZone.classList.add('dragover');
-  });
-  
-  uploadZone.addEventListener('dragleave', () => {
-    uploadZone.classList.remove('dragover');
-  });
-  
-  uploadZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    uploadZone.classList.remove('dragover');
-    handleFileUpload(e.dataTransfer.files);
-  });
-  
-  // Form submission handler
-  document.getElementById('editor-form').addEventListener('submit', commitPostEdits);
-}
-
-// Handle local image file upload through boundary API
-async function handleFileUpload(files) {
-  if (files.length === 0) return;
-  
-  const formData = new FormData();
-  for (let i = 0; i < files.length; i++) {
-    formData.append('files', files[i]);
-  }
-  
-  try {
-    const uploadZone = document.getElementById('upload-zone');
-    uploadZone.querySelector('p').textContent = "UPLOADING FILE STRUCTURES... [▉]";
-    
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData
-    });
-    
-    const result = await response.json();
-    if (result.status === 'success') {
-      result.filenames.forEach(filename => {
-        const imagePath = (filename.startsWith('http://') || filename.startsWith('https://'))
-          ? filename
-          : `images/${filename}`;
-        if (!state.editorUploadedImages.includes(imagePath)) {
-          state.editorUploadedImages.push(imagePath);
-        }
-      });
-      alert('UPLOAD SUCCESSFUL.');
-      updateUploaderPreviews();
-    } else {
-      alert('UPLOAD ERROR: ' + result.error);
-    }
-    
-    uploadZone.querySelector('p').textContent = "DRAG & DROP PHOTOGRAPH FILES HERE or CLICK TO CHOOSE";
-  } catch (error) {
-    console.error('Upload failed:', error);
-    alert('UPLOADER FAILURE. Ensure python server.py is running.');
-    document.getElementById('upload-zone').querySelector('p').textContent = "DRAG & DROP PHOTOGRAPH FILES HERE or CLICK TO CHOOSE";
-  }
-}
-
-// Render uploaded images metadata form list in the editor
-function updateUploaderPreviews() {
-  const container = document.getElementById('upload-preview-container');
-  const featuredSelect = document.getElementById('edit-featured');
-  const currentFeatured = state.activeEditorPost ? state.activeEditorPost.featured_image : '';
-  
-  // Save current values to restore
-  const previousFeaturedSelect = featuredSelect.value || currentFeatured;
-  
-  // Reset select
-  featuredSelect.innerHTML = `<option value="">[ Select an image below after upload ]</option>`;
-  container.innerHTML = '';
-  
-  if (state.editorUploadedImages.length === 0) {
-    container.innerHTML = `<div style="font-size:0.65rem; color:var(--text-dim); text-transform:uppercase;">No images files linked yet.</div>`;
-    return;
-  }
-  
-  state.editorUploadedImages.forEach((imgSrc, idx) => {
-    const filename = imgSrc.split('/').pop();
-    const exif = state.exifMap[filename] || { camera: '', focal_length: '', aperture: '', shutter_speed: '', iso: '' };
-    
-    // Add option to featured dropdown
-    const option = document.createElement('option');
-    option.value = imgSrc;
-    option.textContent = filename;
-    if (imgSrc === previousFeaturedSelect) {
-      option.selected = true;
-    }
-    featuredSelect.appendChild(option);
-    
-    // Create preview row with EXIF form fields
-    const card = document.createElement('div');
-    card.className = 'minimal-panel';
-    card.style.marginTop = '1rem';
-    card.style.padding = '1rem';
-    card.style.display = 'flex';
-    card.style.gap = '1.5rem';
-    
-    card.innerHTML = `
-      <div style="width: 120px; flex-shrink: 0;">
-        <img src="${imgSrc}" style="width:100%; aspect-ratio:3/2; object-fit:cover; border:1px solid var(--border-color);" alt="">
-        <button type="button" class="btn btn-copy-ref" data-src="${imgSrc}" style="width:100%; font-size:0.55rem; padding:0.3rem 0; margin-top:0.4rem;">[ COPY_HTML ]</button>
-        <button type="button" class="btn btn-danger btn-remove-image" data-src="${imgSrc}" style="width:100%; font-size:0.55rem; padding:0.3rem 0; margin-top:0.2rem;">REMOVE</button>
-      </div>
-      <div style="flex-grow: 1; display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.6rem;">
-        <div class="form-group">
-          <label style="font-size:0.55rem;">Camera Body</label>
-          <input type="text" class="exif-input" data-file="${filename}" data-key="camera" value="${exif.camera}" placeholder="X-Pro3 / Canon 80D">
-        </div>
-        <div class="form-group">
-          <label style="font-size:0.55rem;">Focal Length</label>
-          <input type="text" class="exif-input" data-file="${filename}" data-key="focal_length" value="${exif.focal_length}" placeholder="23mm / 16mm">
-        </div>
-        <div class="form-group">
-          <label style="font-size:0.55rem;">Aperture</label>
-          <input type="text" class="exif-input" data-file="${filename}" data-key="aperture" value="${exif.aperture}" placeholder="f/2.8 / f/8">
-        </div>
-        <div class="form-group">
-          <label style="font-size:0.55rem;">Shutter Speed</label>
-          <input type="text" class="exif-input" data-file="${filename}" data-key="shutter_speed" value="${exif.shutter_speed}" placeholder="1/125s / 0.3s">
-        </div>
-        <div class="form-group">
-          <label style="font-size:0.55rem;">ISO Speed</label>
-          <input type="text" class="exif-input" data-file="${filename}" data-key="iso" value="${exif.iso}" placeholder="1600 / 100">
-        </div>
-      </div>
-    `;
-    container.appendChild(card);
-  });
-  
-  // Bind Copy HTML reference helper
-  container.querySelectorAll('.btn-copy-ref').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const src = btn.getAttribute('data-src');
-      const tag = `<figure class="wp-block-image size-large"><img src="${src}" alt="" /></figure>`;
-      navigator.clipboard.writeText(tag).then(() => {
-        const originalText = btn.textContent;
-        btn.textContent = "COPIED!";
-        setTimeout(() => btn.textContent = originalText, 1500);
-      });
-    });
-  });
-  
-  // Bind remove image button
-  container.querySelectorAll('.btn-remove-image').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const src = btn.getAttribute('data-src');
-      state.editorUploadedImages = state.editorUploadedImages.filter(path => path !== src);
-      updateUploaderPreviews();
-    });
-  });
-}
-
-// Save post to Python server
-async function commitPostEdits(e) {
-  e.preventDefault();
-  
-  const title = document.getElementById('edit-title').value;
-  const slug = document.getElementById('edit-slug').value;
-  const dateVal = document.getElementById('edit-date').value;
-  const featured_image = document.getElementById('edit-featured').value;
-  const excerpt = document.getElementById('edit-excerpt').value;
-  const content = document.getElementById('edit-content').value;
-  
-  // Format dates: add timezone matching standard wordpress output (e.g. 2023-01-29T13:41:54-05:00)
-  const date = new Date(dateVal + 'T12:00:00').toISOString().split('.')[0] + '-05:00';
-  
-  const postObject = {
-    id: state.activeEditorPost ? state.activeEditorPost.id : null,
-    title,
-    slug,
-    date,
-    modified: new Date().toISOString().split('.')[0] + '-05:00',
-    featured_image: featured_image || null,
-    excerpt: excerpt ? `<p>${excerpt}</p>` : '',
-    content,
-    url: `http://thelendingside.com/${dateVal.replace(/-/g, '/')}/${slug}/`
-  };
-  
-  // Collect EXIF values from form inputs
-  const exifCollection = {};
-  const exifInputs = document.querySelectorAll('.exif-input');
-  exifInputs.forEach(input => {
-    const filename = input.getAttribute('data-file');
-    const key = input.getAttribute('data-key');
-    const val = input.value.trim();
-    
-    if (val) {
-      if (!exifCollection[filename]) {
-        exifCollection[filename] = {};
-      }
-      exifCollection[filename][key] = val;
-    }
-  });
-  
-  const payload = {
-    post: postObject,
-    exif: exifCollection
-  };
-  
-  try {
-    const response = await fetch('/api/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    
-    const result = await response.json();
-    if (result.status === 'success') {
-      alert('DATABASE COMMIT SUCCESSFUL: POST RECORDED.');
-      await fetchDatabase(); // Reload state
-      window.location.hash = '#admin';
-    } else {
-      alert('API ERROR: ' + result.error);
-    }
-  } catch (error) {
-    console.error('Post save failed:', error);
-    alert('SAVE REJECTED. Server connection failed.');
-  }
-}
-
-// Custom Terminal Confirmation Modal
-function showConfirm(message, callback) {
-  const modal = document.getElementById('confirm-modal');
-  const msgEl = document.getElementById('confirm-message');
-  const btnYes = document.getElementById('btn-confirm-yes');
-  const btnNo = document.getElementById('btn-confirm-no');
-  
-  msgEl.textContent = message.toUpperCase();
-  modal.classList.add('active');
-  document.body.style.overflow = 'hidden';
-  
-  const newBtnYes = btnYes.cloneNode(true);
-  const newBtnNo = btnNo.cloneNode(true);
-  btnYes.parentNode.replaceChild(newBtnYes, btnYes);
-  btnNo.parentNode.replaceChild(newBtnNo, btnNo);
-  
-  newBtnYes.addEventListener('click', () => {
-    modal.classList.remove('active');
-    document.body.style.overflow = '';
-    callback(true);
-  });
-  
-  newBtnNo.addEventListener('click', () => {
-    modal.classList.remove('active');
-    document.body.style.overflow = '';
-    callback(false);
-  });
 }
 
 // Start Application
