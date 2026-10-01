@@ -25,17 +25,15 @@ load_env()
 
 R2_ENDPOINT_URL = os.environ.get('R2_ENDPOINT_URL')
 R2_BUCKET_NAME = os.environ.get('R2_BUCKET_NAME', 'the-lending-side-media')
-R2_PUBLIC_CUSTOM_DOMAIN = os.environ.get('R2_PUBLIC_CUSTOM_DOMAIN', '')
-
-if not (R2_ENDPOINT_URL):
-    print("Error: R2_ENDPOINT_URL missing in .env file.")
-    sys.exit(1)
+R2_PUBLIC_CUSTOM_DOMAIN = os.environ.get('R2_PUBLIC_CUSTOM_DOMAIN', 'https://media.thelendingside.com')
 
 # Determine public bucket domain URL
 if R2_PUBLIC_CUSTOM_DOMAIN:
     r2_prefix = R2_PUBLIC_CUSTOM_DOMAIN.rstrip('/')
-else:
+elif R2_ENDPOINT_URL:
     r2_prefix = f"{R2_ENDPOINT_URL.rstrip('/')}/{R2_BUCKET_NAME}"
+else:
+    r2_prefix = "https://media.thelendingside.com"
 
 print(f"Migrating image paths to public prefix: {r2_prefix}")
 
@@ -61,28 +59,49 @@ def replace_image_url(url):
         filename = os.path.basename(url)
         migrated_count += 1
         return f"{r2_prefix}/{filename}"
+    # Match existing r2.dev dev endpoints
+    if 'r2.dev' in url:
+        # Extract filename (before any query params)
+        clean_url = url.split('?')[0]
+        filename = clean_url.split('/')[-1]
+        query = ('?' + url.split('?', 1)[1]) if '?' in url else ''
+        migrated_count += 1
+        return f"{r2_prefix}/{filename}{query}"
     return url
 
 for post in post_list:
     # 1. Update featured_image metadata field
-    if 'featured_image' in post:
+    if 'featured_image' in post and post['featured_image']:
         post['featured_image'] = replace_image_url(post['featured_image'])
         
-    # 2. Update embedded img tags inside HTML content (including src, srcset, data-orig-file, etc.)
+    # 2. Update embedded img tags inside HTML content
     if 'content' in post and post['content']:
         content = post['content']
         
-        def regex_replace(match):
+        # Replace any r2.dev URLs
+        def r2_dev_replace(match):
             global migrated_count
-            filename = match.group(1)
             migrated_count += 1
-            return f"{r2_prefix}/{filename}"
-            
-        # Matches word boundary images/ followed by name, extension, and optional parameters
+            filename_and_params = match.group(1)
+            return f"{r2_prefix}/{filename_and_params}"
+
+        new_content = re.sub(
+            r'https://[a-zA-Z0-9\.\-_]+\.r2\.dev/([^"\s\',>]+)',
+            r2_dev_replace,
+            content
+        )
+
+        # Replace any residual images/ paths
+        def relative_replace(match):
+            global migrated_count
+            migrated_count += 1
+            filename_and_params = match.group(1)
+            return f"{r2_prefix}/{filename_and_params}"
+
         new_content = re.sub(
             r'\bimages/([^"\s\',>]+?\.(?:jpg|jpeg|png|webp|gif|svg)(?:\?[^"\s\',>]*)?)', 
-            regex_replace, 
-            content
+            relative_replace, 
+            new_content
         )
         post['content'] = new_content
 
@@ -90,4 +109,4 @@ with open(posts_path, 'w', encoding='utf-8') as f:
     json.dump(data, f, indent=2, ensure_ascii=False)
 
 print(f"\nMigration complete! Replaced {migrated_count} image references inside data/posts.json.")
-print("Your database now points fully to Cloudflare R2.")
+print(f"Your database now points fully to: {r2_prefix}")
