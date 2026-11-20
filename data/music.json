@@ -1,0 +1,75 @@
+{
+  "now_playing": {
+    "active": true,
+    "title": "Bloweyelashwish",
+    "artist": "lovesliescrushing",
+    "year": 2026,
+    "genre": "Electronic, Rock",
+    "style": "Shoegaze, Ethereal, Experimental",
+    "label": "Numero Group",
+    "format": "Album",
+    "side": "A",
+    "rpm": 33,
+    "cover_image_url": "https://i.discogs.com/B3K50gppNxwcStionXN7XSuUIKENxD5CSTMOtQlEl4o/rs:fit/g:sm/q:90/h:562/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTM2Nzc2/MTYxLTE3NzM1Nzgz/NjAtNjY0NC5qcGVn.jpeg",
+    "thumb_image_url": "https://i.discogs.com/jS4m6TspO6yly6J6d_oiA3V1NQ0lmrGIzI9hkYIwDGw/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTM2Nzc2/MTYxLTE3NzM1Nzgz/NjAtNjY0NC5qcGVn.jpeg",
+    "started_at": "2026-11-20T03:09:46Z"
+  },
+  "recent_spins": [
+    {
+      "id": 1,
+      "title": "Bloweyelashwish",
+      "artist": "lovesliescrushing",
+      "year": 2026,
+      "genre": "Electronic, Rock",
+      "label": "Numero Group",
+      "format": "Album",
+      "side": "A",
+      "rpm": 33,
+      "cover_image_url": "https://i.discogs.com/B3K50gppNxwcStionXN7XSuUIKENxD5CSTMOtQlEl4o/rs:fit/g:sm/q:90/h:562/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTM2Nzc2/MTYxLTE3NzM1Nzgz/NjAtNjY0NC5qcGVn.jpeg",
+      "thumb_image_url": "https://i.discogs.com/jS4m6TspO6yly6J6d_oiA3V1NQ0lmrGIzI9hkYIwDGw/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTM2Nzc2/MTYxLTE3NzM1Nzgz/NjAtNjY0NC5qcGVn.jpeg",
+      "played_at": "2026-11-20T03:09:46Z"
+    },
+    {
+      "id": 2,
+      "title": "A・I・R (Air In Resort)",
+      "artist": "Hiroshi Yoshimura",
+      "year": 2025,
+      "genre": "Electronic",
+      "label": "Sound Process",
+      "format": "Album",
+      "side": "A",
+      "rpm": 45,
+      "cover_image_url": "https://i.discogs.com/swlWk0tYGRBEyMnkizhvWE4SzDX-RLmt8mwOdujy3OY/rs:fit/g:sm/q:90/h:600/w:599/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTMzNzI5/MDMzLTE3NDQ5MTYx/MjUtNTI2My5qcGVn.jpeg",
+      "thumb_image_url": "https://i.discogs.com/T3zc_Ixo_sty3OqSsHR01rpLiJD45sAtQyaABbwlhnw/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTMzNzI5/MDMzLTE3NDQ5MTYx/MjUtNTI2My5qcGVn.jpeg",
+      "played_at": "2026-11-19T22:55:15Z"
+    },
+    {
+      "id": 3,
+      "title": "The Earth Is Not A Cold Dead Place",
+      "artist": "Explosions In The Sky",
+      "year": 2011,
+      "genre": "Rock",
+      "label": "Temporary Residence Limited",
+      "format": "LP",
+      "side": "A",
+      "rpm": 33,
+      "cover_image_url": "https://i.discogs.com/guyWjmZxEANFAUDVbRjQa0spr4mJDYotdxvl4Q3LnZQ/rs:fit/g:sm/q:90/h:598/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTcyNTY2/MzYtMTQzNzMyMDgx/OS00MDYyLmpwZWc.jpeg",
+      "thumb_image_url": "https://i.discogs.com/tsov7I83MV3r13ozfZ3-E5JHWzGeZr-Hv1D7bM_LN3U/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTcyNTY2/MzYtMTQzNzMyMDgx/OS00MDYyLmpwZWc.jpeg",
+      "played_at": "2026-11-18T22:54:45Z"
+    },
+    {
+      "id": 4,
+      "title": "Happy Songs For Happy People",
+      "artist": "Mogwai",
+      "year": 2018,
+      "genre": "Electronic, Rock",
+      "label": "Play It Again Sam",
+      "format": "Album",
+      "side": "A",
+      "rpm": 33,
+      "cover_image_url": "https://i.discogs.com/n0_siJTKrY2v3QNJDF55zU3JwcE4In8G1CVgDHk9Dpc/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEyMzUy/MzEzLTE2NTk3NzEz/NTEtNzI3OC5qcGVn.jpeg",
+      "thumb_image_url": "https://i.discogs.com/OmOfQ0XPFqIe618-zO1F5TZJB0tF3wxQ7sP_xi0v-uo/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEyMzUy/MzEzLTE2NTk3NzEz/NTEtNzI3OC5qcGVn.jpeg",
+      "played_at": "2026-11-18T22:27:11Z"
+    }
+  ]
+}

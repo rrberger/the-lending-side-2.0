@@ -66,6 +66,11 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
 
     def do_GET(self):
+        # Music API endpoint
+        if self.path.startswith('/api/music'):
+            self._handle_get_music()
+            return
+
         # Clean route alias for the authoring studio
         if self.path in ('/studio', '/studio/'):
             self.path = '/studio.html'
@@ -89,6 +94,9 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
         # 4. Git Deploy Endpoint
         elif self.path == '/api/git-deploy':
             self._handle_git_deploy()
+        # 5. Music Now Playing / Scrobbles Webhook
+        elif self.path == '/api/music':
+            self._handle_post_music()
         else:
             self.send_error(404, "Endpoint not found")
 
@@ -320,6 +328,86 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json({"status": "error", "error": f"Git command failed: {str(e)}"}, 500)
         except Exception as e:
             self._send_json({"status": "error", "error": str(e)}, 500)
+
+    def _handle_get_music(self):
+        music_path = os.path.join(DIRECTORY, 'data', 'music.json')
+        if os.path.exists(music_path):
+            try:
+                with open(music_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    self._send_json(data)
+                    return
+            except Exception as e:
+                print(f"Error reading music.json: {e}")
+        self._send_json({"now_playing": None, "recent_spins": []})
+
+    def _handle_post_music(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length).decode('utf-8')
+        try:
+            payload = json.loads(post_data)
+        except Exception:
+            self._send_json({"error": "Invalid JSON"}, 400)
+            return
+
+        music_path = os.path.join(DIRECTORY, 'data', 'music.json')
+        db = {"now_playing": None, "recent_spins": []}
+        if os.path.exists(music_path):
+            try:
+                with open(music_path, 'r', encoding='utf-8') as f:
+                    db = json.load(f)
+            except Exception:
+                pass
+
+        action = payload.get("action", "spin")
+        record = payload.get("record", {})
+        session = payload.get("session", {})
+
+        if action in ("spin", "flip"):
+            db["now_playing"] = {
+                "active": True,
+                "title": record.get("title", "Unknown"),
+                "artist": record.get("artist", "Unknown"),
+                "year": record.get("year"),
+                "genre": record.get("genre"),
+                "label": record.get("label"),
+                "format": record.get("format", "Album"),
+                "side": (session.get("side") or payload.get("side") or "A").upper(),
+                "rpm": session.get("rpm") or payload.get("rpm") or 33,
+                "cover_image_url": record.get("cover_image_url"),
+                "thumb_image_url": record.get("thumb_image_url"),
+                "started_at": session.get("started_at") or payload.get("timestamp")
+            }
+            if action == "spin":
+                spins = db.get("recent_spins", [])
+                new_entry = {
+                    "id": len(spins) + 1,
+                    "title": record.get("title", "Unknown"),
+                    "artist": record.get("artist", "Unknown"),
+                    "year": record.get("year"),
+                    "genre": record.get("genre"),
+                    "label": record.get("label"),
+                    "format": record.get("format", "Album"),
+                    "side": (session.get("side") or "A").upper(),
+                    "rpm": session.get("rpm") or 33,
+                    "cover_image_url": record.get("cover_image_url"),
+                    "thumb_image_url": record.get("thumb_image_url"),
+                    "played_at": payload.get("timestamp")
+                }
+                # Keep top 30
+                db["recent_spins"] = [new_entry] + [s for s in spins if s.get("title") != record.get("title") or s.get("artist") != record.get("artist")][:29]
+        elif action == "stop":
+            if db.get("now_playing"):
+                db["now_playing"]["active"] = False
+        elif action == "sync":
+            recent = payload.get("recent_spins", [])
+            db["recent_spins"] = recent[:30]
+
+        os.makedirs(os.path.dirname(music_path), exist_ok=True)
+        with open(music_path, 'w', encoding='utf-8') as f:
+            json.dump(db, f, indent=2)
+
+        self._send_json({"success": True, "action": action})
 
     def _send_json(self, data, status_code=200):
         self.send_response(status_code)

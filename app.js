@@ -153,9 +153,10 @@ function handleRoute() {
       elements.layoutSwitcher.style.display = 'block';
       renderHome();
       break;
+    case '#music':
     case '#playlists':
       elements.layoutSwitcher.style.display = 'none';
-      renderPlaylists();
+      renderMusic();
       break;
     case '#prints':
       elements.layoutSwitcher.style.display = 'none';
@@ -176,7 +177,8 @@ function updateActiveLinks(hash) {
   const mainHash = hash.split('/')[0];
   elements.menuLinks.forEach(link => {
     const target = link.getAttribute('href');
-    if (target === mainHash) {
+    const isMusic = (mainHash === '#music' || mainHash === '#playlists') && (target === '#music' || target === '#playlists');
+    if (target === mainHash || isMusic) {
       link.classList.add('active');
     } else {
       link.classList.remove('active');
@@ -783,24 +785,241 @@ async function initComments(slug) {
   });
 }
 
-// --- RENDER 3: PLAYLISTS PAGE ---
-function renderPlaylists() {
-  let html = `
-    <div class="page-container">
-      <h1>playlists</h1>
-      <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:2rem; max-width:650px; line-height:1.6;">
-        music is the skeleton that holds the imagery together. these are the songs and soundscapes that were looping in my headphones while developing these stories and capturing these frames.
-      </p>
-      
-      <div style="border: 1px dashed var(--border-color); padding: 3rem 2rem; border-radius: 4px; text-align: center; max-width: 650px; background: rgba(255,255,255,0.01); margin-top: 1rem;">
-        <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin: 0; text-transform: uppercase; letter-spacing: 0.15em;">
-          // Curating tapes... coming soon
+// Helper function for safe HTML escaping
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatRelativeTime(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  const now = new Date();
+  const diffSec = Math.floor((now - d) / 1000);
+  if (diffSec < 60) return 'just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+let musicPollTimer = null;
+
+async function fetchMusicData() {
+  try {
+    const res = await fetch('/api/music');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    try {
+      const fallbackRes = await fetch('data/music.json');
+      if (fallbackRes.ok) return await fallbackRes.json();
+    } catch {}
+    return { now_playing: null, recent_spins: [] };
+  }
+}
+
+// --- RENDER 3: MUSIC & VINYL ROTATION PAGE (02_music) ---
+async function renderMusic() {
+  clearInterval(musicPollTimer);
+
+  // Initial skeleton
+  elements.viewContent.innerHTML = `
+    <div class="page-container music-page">
+      <div class="music-header">
+        <h1>music<span class="stoplight"></span></h1>
+        <p class="music-intro">
+          analog vinyl in rotation on the turntable. soundscapes, ambient loops, and physical records playing while developing stories and capturing frames.
         </p>
+      </div>
+
+      <div id="music-widget-mount" class="music-widget-mount">
+        <div class="music-loading-skeleton">
+          <span class="pulse-led live"></span>
+          <span class="skeleton-text">// reading turntable telemetry...</span>
+        </div>
+      </div>
+
+      <div class="music-history-section">
+        <div class="music-section-title-row">
+          <span class="section-badge">// 01_CURRENT ROTATION & VINYL ARCHIVE</span>
+          <button type="button" class="music-sync-btn" onclick="renderMusic()" title="Refresh live telemetry">
+            [ ↺ sync ]
+          </button>
+        </div>
+        <div id="music-grid-mount" class="music-grid">
+          <div class="music-grid-loading">// loading rotation archive...</div>
+        </div>
       </div>
     </div>
   `;
-  elements.viewContent.innerHTML = html;
+
+  const data = await fetchMusicData();
+  const widgetMount = document.getElementById('music-widget-mount');
+  const gridMount = document.getElementById('music-grid-mount');
+
+  if (!widgetMount || !gridMount) return;
+
+  const np = data.now_playing;
+  const recent = data.recent_spins || [];
+
+  // 1. RENDER NOW SPINNING WIDGET
+  if (np && np.active) {
+    const artUrl = np.cover_image_url || np.thumb_image_url || '';
+    const artHtml = artUrl 
+      ? `<img src="${artUrl}" alt="${escapeHtml(np.title)}" class="now-spinning-art" loading="lazy">`
+      : `<div class="art-fallback"><span class="fallback-vinyl-icon">💽</span></div>`;
+
+    widgetMount.innerHTML = `
+      <div class="now-spinning-widget active">
+        <div class="widget-status-bar">
+          <div class="status-left">
+            <span class="pulse-led live"></span>
+            <span class="status-label">LIVE ON TURNTABLE // NOW SPINNING</span>
+          </div>
+          <div class="status-right">
+            <span class="tag-pill accent">SIDE ${escapeHtml(np.side || 'A')}</span>
+            <span class="tag-pill">${np.rpm || 33} RPM</span>
+            <span class="tag-pill">${escapeHtml(np.format || 'LP')}</span>
+          </div>
+        </div>
+
+        <div class="now-spinning-body">
+          <div class="sleeve-jacket-wrap">
+            <div class="vinyl-disc-peek spinning"></div>
+            <div class="jacket-frame">
+              ${artHtml}
+            </div>
+          </div>
+
+          <div class="now-spinning-details">
+            <div class="meta-headline">
+              <span class="live-badge">NEEDLE DROPPED</span>
+              ${np.started_at ? `<span class="time-elapsed">${formatRelativeTime(np.started_at)}</span>` : ''}
+            </div>
+            <h2 class="record-title">${escapeHtml(np.title)}</h2>
+            <h3 class="record-artist">${escapeHtml(np.artist)}</h3>
+
+            <div class="record-specs-hud">
+              ${np.year ? `<div class="spec-cell"><span class="k">YEAR</span><span class="v">${np.year}</span></div>` : ''}
+              ${np.label ? `<div class="spec-cell"><span class="k">LABEL</span><span class="v">${escapeHtml(np.label)}</span></div>` : ''}
+              ${np.genre ? `<div class="spec-cell"><span class="k">GENRE</span><span class="v">${escapeHtml(np.genre)}</span></div>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    // Idle state: show last spun record or clean idle terminal card
+    const lastSpun = recent[0] || null;
+    const artUrl = lastSpun ? (lastSpun.cover_image_url || lastSpun.thumb_image_url || '') : '';
+    const artHtml = artUrl 
+      ? `<img src="${artUrl}" alt="${escapeHtml(lastSpun.title)}" class="now-spinning-art" loading="lazy">`
+      : `<div class="art-fallback"><span class="fallback-vinyl-icon">💽</span></div>`;
+
+    widgetMount.innerHTML = `
+      <div class="now-spinning-widget idle">
+        <div class="widget-status-bar">
+          <div class="status-left">
+            <span class="idle-dot"></span>
+            <span class="status-label">TURNTABLE IDLE // TONEMASTER AT REST</span>
+          </div>
+          <div class="status-right">
+            <span class="tag-pill dim">${lastSpun ? 'LAST SPUN' : 'STANDBY'}</span>
+          </div>
+        </div>
+
+        <div class="now-spinning-body">
+          <div class="sleeve-jacket-wrap">
+            <div class="vinyl-disc-peek"></div>
+            <div class="jacket-frame">
+              ${artHtml}
+            </div>
+          </div>
+
+          <div class="now-spinning-details">
+            <div class="meta-headline">
+              <span class="idle-badge">PREVIOUS ROTATION</span>
+              ${lastSpun && lastSpun.played_at ? `<span class="time-elapsed">${formatRelativeTime(lastSpun.played_at)}</span>` : ''}
+            </div>
+            <h2 class="record-title">${lastSpun ? escapeHtml(lastSpun.title) : 'No recent playback'}</h2>
+            <h3 class="record-artist">${lastSpun ? escapeHtml(lastSpun.artist) : 'Analog Listener active in home studio'}</h3>
+
+            ${lastSpun ? `
+              <div class="record-specs-hud">
+                ${lastSpun.year ? `<div class="spec-cell"><span class="k">YEAR</span><span class="v">${lastSpun.year}</span></div>` : ''}
+                ${lastSpun.label ? `<div class="spec-cell"><span class="k">LABEL</span><span class="v">${escapeHtml(lastSpun.label)}</span></div>` : ''}
+                ${lastSpun.format ? `<div class="spec-cell"><span class="k">FORMAT</span><span class="v">${escapeHtml(lastSpun.format)}</span></div>` : ''}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // 2. RENDER RECENT SPINS GRID
+  if (recent.length === 0) {
+    gridMount.innerHTML = `<div class="music-empty-state">// No listening history logged yet.</div>`;
+  } else {
+    gridMount.innerHTML = recent.map(item => {
+      const art = item.cover_image_url || item.thumb_image_url || '';
+      const thumbHtml = art 
+        ? `<img src="${art}" alt="${escapeHtml(item.title)}" class="record-card-thumb" loading="lazy">`
+        : `<div class="card-thumb-fallback">💽</div>`;
+
+      const timeStr = formatRelativeTime(item.played_at);
+
+      return `
+        <div class="record-card">
+          <div class="record-card-sleeve">
+            ${thumbHtml}
+            <div class="card-vinyl-edge"></div>
+          </div>
+          <div class="record-card-content">
+            <div class="record-card-artist">${escapeHtml(item.artist)}</div>
+            <div class="record-card-title">${escapeHtml(item.title)}</div>
+            <div class="record-card-meta">
+              <span>${item.year || ''}</span>
+              ${item.label ? `<span>· ${escapeHtml(item.label)}</span>` : ''}
+              ${item.format ? `<span>· ${escapeHtml(item.format)}</span>` : ''}
+            </div>
+            ${timeStr ? `<div class="record-card-time"><span class="time-icon">▸</span> ${timeStr}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Auto-refresh poll every 30 seconds while user is on #music
+  musicPollTimer = setInterval(async () => {
+    const curHash = window.location.hash.split('/')[0];
+    if (curHash !== '#music' && curHash !== '#playlists') {
+      clearInterval(musicPollTimer);
+      return;
+    }
+    const fresh = await fetchMusicData();
+    if (fresh && fresh.now_playing) {
+      if (!np || !np.active || np.title !== fresh.now_playing.title || np.side !== fresh.now_playing.side) {
+        renderMusic();
+      }
+    } else if (np && np.active) {
+      renderMusic();
+    }
+  }, 30000);
 }
+
+// Backwards-compatible alias for existing links
+const renderPlaylists = renderMusic;
 
 // --- RENDER 4: PRINTS PAGE ---
 function renderPrints() {

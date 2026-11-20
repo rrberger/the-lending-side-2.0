@@ -1149,83 +1149,461 @@ main.viewport {
   border-color: var(--text-muted);
 }
 
-/* --- PLAYLISTS SECTION --- */
-.playlists-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2.5rem;
-  margin-top: 1.5rem;
+/* --- 02_MUSIC & VINYL TRACKER SECTION --- */
+.music-page {
+  max-width: 900px;
 }
 
-.playlist-card {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: row;
+.music-header {
+  margin-bottom: 2.2rem;
 }
 
-@media (max-width: 900px) {
-  .playlist-card {
-    flex-direction: column;
-  }
-}
-
-.playlist-info {
-  padding: 1.8rem;
-  width: 40%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  border-right: 1px solid var(--border-color);
-}
-
-@media (max-width: 900px) {
-  .playlist-info {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
-  }
-}
-
-.playlist-info h3 {
-  font-size: 1.1rem;
+.music-header h1 {
+  font-size: 1.6rem;
   font-weight: 500;
-  margin-bottom: 0.2rem;
-  text-transform: lowercase;
+  margin-bottom: 0.8rem;
+  letter-spacing: -0.02em;
 }
 
-.playlist-info .vibe {
-  font-size: 0.65rem;
+.music-intro {
   color: var(--text-muted);
-  text-transform: lowercase;
-  letter-spacing: 0.02em;
+  font-size: 0.8rem;
+  line-height: 1.65;
+  max-width: 680px;
+}
+
+/* Now Spinning Live Widget */
+.now-spinning-widget {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color-heavy);
+  margin-bottom: 3rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color var(--transition-speed) var(--ease-in-out);
+}
+
+.now-spinning-widget.active {
+  border-color: rgba(var(--accent-color-rgb), 0.5);
+  box-shadow: 0 0 24px rgba(var(--accent-color-rgb), 0.08);
+}
+
+.widget-status-bar {
+  padding: 0.75rem 1.25rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pulse-led {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  display: inline-block;
+}
+
+.pulse-led.live {
+  background: var(--accent-color);
+  box-shadow: 0 0 8px var(--accent-color);
+  animation: ledGlowPulse 2s infinite ease-in-out;
+}
+
+@keyframes ledGlowPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 10px var(--accent-color);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.85);
+    box-shadow: 0 0 2px var(--accent-color);
+  }
+}
+
+.idle-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.5;
+  display: inline-block;
+}
+
+.status-label {
+  color: var(--text-color);
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tag-pill {
+  font-size: 0.62rem;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.tag-pill.accent {
+  border-color: rgba(var(--accent-color-rgb), 0.4);
+  color: var(--accent-color);
+  background: rgba(var(--accent-color-rgb), 0.08);
+}
+
+.tag-pill.dim {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.now-spinning-body {
+  padding: 1.5rem;
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+@media (max-width: 680px) {
+  .now-spinning-body {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.2rem;
+    padding: 1.2rem;
+  }
+}
+
+.sleeve-jacket-wrap {
+  width: 140px;
+  height: 140px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jacket-frame {
+  width: 130px;
+  height: 130px;
+  position: relative;
+  z-index: 2;
+  border: 1px solid var(--border-color);
+  background: #090c12;
+  box-shadow: -4px 6px 14px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.now-spinning-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.art-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0a0d14;
+  font-size: 2rem;
+}
+
+/* Tactile Vinyl Disc Peek */
+.vinyl-disc-peek {
+  position: absolute;
+  right: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #1b202c 0%, #0a0c10 70%, #050608 100%);
+  border: 1px solid #2a3449;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+  z-index: 1;
+}
+
+.vinyl-disc-peek::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  opacity: 0.85;
+  box-shadow: inset 0 0 0 2px #0a0c10;
+}
+
+.vinyl-disc-peek.spinning {
+  animation: spinVinylPeek 3.6s linear infinite;
+}
+
+@keyframes spinVinylPeek {
+  from {
+    transform: translateY(-50%) rotate(0deg);
+  }
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
+}
+
+.now-spinning-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.meta-headline {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+}
+
+.live-badge {
+  color: var(--accent-color);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.idle-badge {
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.time-elapsed {
+  color: var(--text-muted);
+}
+
+.record-title {
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.record-artist {
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--accent-color);
   margin-bottom: 1rem;
 }
 
-.playlist-info .desc {
-  font-size: 0.75rem;
+.record-specs-hud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px dotted var(--border-color);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.spec-cell {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.spec-cell .k {
   color: var(--text-muted);
-  line-height: 1.6;
-  margin-bottom: 1.8rem;
 }
 
-.playlist-spotify {
-  width: 60%;
-  height: 330px;
-  background-color: #020304;
+.spec-cell .v {
+  color: var(--text-color);
 }
 
-@media (max-width: 900px) {
-  .playlist-spotify {
-    width: 100%;
-    height: 300px;
+/* History & Archive Section */
+.music-history-section {
+  margin-top: 2rem;
+}
+
+.music-section-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.2rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px dotted var(--border-color);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.section-badge {
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.music-sync-btn {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  transition: opacity var(--transition-speed);
+}
+
+.music-sync-btn:hover {
+  opacity: 0.7;
+}
+
+/* Music Rotation Grid */
+.music-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.2rem;
+}
+
+@media (max-width: 600px) {
+  .music-grid {
+    grid-template-columns: 1fr;
   }
 }
 
-.playlist-spotify iframe {
+.record-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 0.9rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  transition: all var(--transition-speed) var(--ease-in-out);
+}
+
+.record-card:hover {
+  border-color: var(--border-color-heavy);
+  background-color: rgba(255, 183, 3, 0.02);
+  transform: translateY(-2px);
+}
+
+.record-card-sleeve {
+  width: 62px;
+  height: 62px;
+  flex-shrink: 0;
+  position: relative;
+  background: #090c12;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.record-card-thumb {
   width: 100%;
   height: 100%;
-  border: none;
+  object-fit: cover;
+  display: block;
+}
+
+.card-thumb-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+}
+
+.card-vinyl-edge {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.5));
+}
+
+.record-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.record-card-artist {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--accent-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.15rem;
+}
+
+.record-card-title {
+  font-size: 0.88rem;
+  font-weight: 400;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.3rem;
+}
+
+.record-card-meta {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.record-card-time {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+}
+
+.record-card-time .time-icon {
+  color: var(--accent-color);
+}
+
+.music-loading-skeleton,
+.music-empty-state,
+.music-grid-loading {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 2.5rem 1rem;
+  text-align: center;
+  border: 1px dashed var(--border-color);
+}
+
+.music-loading-skeleton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
 }
 
 /* --- IMMERSIVE LIGHTBOX --- */
