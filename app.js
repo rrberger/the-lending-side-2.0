@@ -838,7 +838,7 @@ async function renderMusic() {
       <div class="music-header">
         <h1>music<span class="stoplight"></span></h1>
         <p class="music-intro">
-          analog vinyl in rotation on the turntable. soundscapes, ambient loops, and physical records playing while developing stories and capturing frames.
+          this is an api that posts what records i'm playing on my turn table. i wanted to bridge together my analog audio (where i listen to the most music) with my little corner of the soon-to-be-dead internet.
         </p>
       </div>
 
