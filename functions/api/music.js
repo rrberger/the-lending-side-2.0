@@ -69,7 +69,7 @@ const DEFAULT_FALLBACK_HISTORY = [
 
 async function ensureTables(db) {
   try {
-    await db.exec(`
+    await db.prepare(`
       CREATE TABLE IF NOT EXISTS music_now_playing (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         active INTEGER DEFAULT 0,
@@ -85,7 +85,14 @@ async function ensureTables(db) {
         thumb_image_url TEXT,
         started_at TEXT,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+      )
+    `).run();
+  } catch (e1) {
+    console.error("ensureTables now_playing error:", e1);
+  }
+
+  try {
+    await db.prepare(`
       CREATE TABLE IF NOT EXISTS music_spins (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         record_id INTEGER,
@@ -101,12 +108,19 @@ async function ensureTables(db) {
         thumb_image_url TEXT,
         duration_seconds INTEGER DEFAULT 0,
         played_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+      )
+    `).run();
+  } catch (e2) {
+    console.error("ensureTables spins error:", e2);
+  }
+
+  try {
+    await db.prepare(`
       CREATE INDEX IF NOT EXISTS idx_music_spins_played_at 
-      ON music_spins(played_at DESC);
-    `);
-  } catch (err) {
-    console.error("Failed to ensure music tables:", err);
+      ON music_spins(played_at DESC)
+    `).run();
+  } catch (e3) {
+    console.error("ensureTables index error:", e3);
   }
 }
 
@@ -143,8 +157,10 @@ export async function onRequestGet(context) {
       recent = DEFAULT_FALLBACK_HISTORY;
     }
 
+    const activeNowPlaying = npRow && npRow.active ? npRow : (npRow || { ...DEFAULT_FALLBACK_HISTORY[0], active: 0 });
+
     return new Response(JSON.stringify({
-      now_playing: npRow && npRow.active ? npRow : null,
+      now_playing: activeNowPlaying,
       recent_spins: recent
     }), { status: 200, headers: corsHeaders });
   } catch (err) {
