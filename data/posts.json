@@ -1,6 +1,16 @@
 {
   "posts": [
     {
+      "title": "Minilab Always-On Verification",
+      "slug": "minilab-verification-test",
+      "date": "2026-11-20T14:05:00.000Z",
+      "modified": "2026-11-20T14:05:00.000Z",
+      "content": "<p>Testing one-click deploy from Minilab K3s container.</p>",
+      "markdown": "Testing one-click deploy from Minilab K3s container.",
+      "excerpt": "<p>Minilab test.</p>",
+      "id": 1497
+    },
+    {
       "id": 1496,
       "title": "“there’s no way out but through” july 2023",
       "slug": "theres-no-way-out-but-through-july-2023",
