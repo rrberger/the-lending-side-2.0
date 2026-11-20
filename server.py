@@ -74,6 +74,7 @@ def init_repo():
     if os.path.exists(git_dir):
         print(f"Git repo already exists at {DIRECTORY}")
         _configure_git()
+        _sync_app_files()
         return
 
     if not GIT_REPO_URL:
@@ -81,6 +82,7 @@ def init_repo():
         if not os.path.exists(posts_path):
             with open(posts_path, 'w', encoding='utf-8') as f:
                 json.dump({"posts": [], "pages": [], "exif": {}}, f, indent=2)
+        _sync_app_files()
         return
 
     import subprocess
@@ -99,12 +101,30 @@ def init_repo():
         )
         print(f"Cloned successfully into {DIRECTORY}")
         _configure_git()
+        _sync_app_files()
     except subprocess.CalledProcessError as e:
         print(f"Git clone failed: {e}")
         os.makedirs(os.path.join(DIRECTORY, 'data'), exist_ok=True)
         if not os.path.exists(posts_path):
             with open(posts_path, 'w', encoding='utf-8') as f:
                 json.dump({"posts": [], "pages": [], "exif": {}}, f, indent=2)
+        _sync_app_files()
+
+
+def _sync_app_files():
+    """Keep studio.html and manifest.json updated in DIRECTORY from container /app."""
+    app_dir = os.path.abspath(os.path.dirname(__file__))
+    if app_dir != DIRECTORY:
+        import shutil
+        for fname in ('studio.html', 'manifest.json'):
+            src = os.path.join(app_dir, fname)
+            dst = os.path.join(DIRECTORY, fname)
+            if os.path.exists(src):
+                try:
+                    shutil.copy2(src, dst)
+                    print(f"Synced {fname} to {DIRECTORY}")
+                except Exception as e:
+                    print(f"Sync warning for {fname}: {e}")
 
 
 def _configure_git():
@@ -114,10 +134,16 @@ def _configure_git():
         subprocess.run(["git", "config", "user.name", "TLS Studio"], check=False, cwd=DIRECTORY)
         subprocess.run(["git", "config", "user.email", "studio@thelendingside.com"], check=False, cwd=DIRECTORY)
 
+        ssh_key = '/data/id_ed25519'
+        if os.path.exists(ssh_key):
+            subprocess.run(["git", "config", "core.sshCommand", f"ssh -i {ssh_key} -o StrictHostKeyChecking=no"], check=False, cwd=DIRECTORY)
+
         if GITHUB_PAT and GIT_REPO_URL and 'github.com' in GIT_REPO_URL:
             clean_url = re.sub(r'https://[^@]+@', 'https://', GIT_REPO_URL)
             push_url = clean_url.replace('https://', f'https://x-access-token:{GITHUB_PAT}@')
             subprocess.run(["git", "remote", "set-url", "origin", push_url], check=False, cwd=DIRECTORY)
+        elif os.path.exists(ssh_key):
+            subprocess.run(["git", "remote", "set-url", "origin", "git@github.com:rrberger/the-lending-side-2.0.git"], check=False, cwd=DIRECTORY)
     except Exception as e:
         print(f"Git config warning: {e}")
 
@@ -163,33 +189,63 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if self.path == '/health':
+        clean_path = self.path.split('?')[0]
+
+        if clean_path == '/health':
             self._send_json({"status": "ok", "service": "tls-cms"})
             return
 
-        if self.path.startswith('/api/music'):
+        if clean_path.startswith('/api/music'):
             self._handle_get_music()
             return
 
         # Clean route alias for the authoring studio
-        if self.path in ('/studio', '/studio/', '/studio.html'):
+        if clean_path in ('/studio', '/studio/', '/studio.html'):
+            app_studio = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'studio.html')
             local_studio = os.path.join(DIRECTORY, 'studio.html')
-            fallback_studio = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'studio.html')
-            target_path = local_studio if os.path.exists(local_studio) else fallback_studio
+            target_path = app_studio if os.path.exists(app_studio) else local_studio
             if os.path.exists(target_path):
+                with open(target_path, 'rb') as f:
+                    content = f.read()
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Content-Length', str(len(content)))
                 self.end_headers()
-                with open(target_path, 'rb') as f:
-                    self.wfile.write(f.read())
+                try:
+                    self.wfile.write(content)
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+                return
+
+        if clean_path == '/manifest.json':
+            app_manifest = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'manifest.json')
+            local_manifest = os.path.join(DIRECTORY, 'manifest.json')
+            target_manifest = app_manifest if os.path.exists(app_manifest) else local_manifest
+            if os.path.exists(target_manifest):
+                with open(target_manifest, 'rb') as f:
+                    content = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/manifest+json')
+                self.send_header('Content-Length', str(len(content)))
+                self.end_headers()
+                try:
+                    self.wfile.write(content)
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
                 return
 
         super().do_GET()
 
     def do_HEAD(self):
-        if self.path in ('/studio', '/studio/', '/studio.html'):
+        clean_path = self.path.split('?')[0]
+        if clean_path in ('/studio', '/studio/', '/studio.html'):
+            local_studio = os.path.join(DIRECTORY, 'studio.html')
+            fallback_studio = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'studio.html')
+            target_path = local_studio if os.path.exists(local_studio) else fallback_studio
+            content_length = os.path.getsize(target_path) if os.path.exists(target_path) else 0
             self.send_response(200)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(content_length))
             self.end_headers()
             return
         super().do_HEAD()
@@ -514,10 +570,15 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
         self._send_json({"success": True, "action": action})
 
     def _send_json(self, data, status_code=200):
+        body = json.dumps(data).encode('utf-8')
         self.send_response(status_code)
         self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', str(len(body)))
         self.end_headers()
-        self.wfile.write(json.dumps(data).encode('utf-8'))
+        try:
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
 if __name__ == '__main__':
     init_repo()

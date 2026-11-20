@@ -3,7 +3,7 @@
 # Always-on blog authoring backend for Minilab K3s
 # Backend: Python 3.11 (stdlib http.server + boto3 R2)
 # Storage: PVC for data/posts.json + git repo
-# NodePort: 30086 -> Host Port 8086
+# NodePort: 30087 -> Host Port 8087
 # ==============================================================================
 
 # 1. Persistent Storage for Blog Data & Git Repo
@@ -87,7 +87,7 @@ spec:
         persistentVolumeClaim:
           claimName: tls-cms-data-pvc
 ---
-# 3. Studio CMS NodePort Service (NodePort 30086 -> Host Port 8086)
+# 3. Studio CMS NodePort Service (NodePort 30087 -> Host Port 8087)
 apiVersion: v1
 kind: Service
 metadata:
@@ -102,4 +102,4 @@ spec:
   ports:
   - port: 8000
     targetPort: 8000
-    nodePort: 30086
+    nodePort: 30087

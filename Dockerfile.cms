@@ -22,6 +22,7 @@ RUN pip3 install --no-cache-dir boto3
 # Copy application source
 COPY server.py /app/
 COPY studio.html /app/
+COPY manifest.json /app/
 COPY data/ /app/data/
 
 ENV PYTHONUNBUFFERED=1

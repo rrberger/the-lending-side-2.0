@@ -6,6 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>the lending side — authoring studio</title>
 
+  <!-- PWA & Mobile Web App Meta -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#07090c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TLS Studio">
+
   <!-- Google Fonts & Monospace styling -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -661,7 +668,17 @@
   <script>
     // 1. Auth System — Localhost bypasses, remote requires token
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    let authToken = sessionStorage.getItem('cms_auth_token') || '';
+    let authToken = localStorage.getItem('cms_auth_token') || sessionStorage.getItem('cms_auth_token') || '';
+
+    // Check URL query param: ?token=...
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlToken = urlParams.get('token');
+    if (urlToken) {
+      authToken = urlToken;
+      localStorage.setItem('cms_auth_token', urlToken);
+      sessionStorage.setItem('cms_auth_token', urlToken);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
 
     function getAuthHeaders() {
       const headers = { 'Content-Type': 'application/json' };
@@ -676,8 +693,9 @@
     }
 
     async function handleLogin(e) {
-      e.preventDefault();
-      const token = document.getElementById('login-token').value.trim();
+      if (e) e.preventDefault();
+      const tokenInput = document.getElementById('login-token');
+      const token = (tokenInput ? tokenInput.value : authToken || '').trim();
       if (!token) return false;
 
       try {
@@ -688,13 +706,12 @@
         });
         if (res.ok) {
           authToken = token;
+          localStorage.setItem('cms_auth_token', token);
           sessionStorage.setItem('cms_auth_token', token);
           document.getElementById('security-barrier').style.display = 'none';
           document.getElementById('mode-badge').textContent = 'minilab';
-          initEasyMDE();
-          initEvents();
-          resetForm();
-          await loadPosts();
+          initStudio();
+          return true;
         } else {
           document.getElementById('login-error').style.display = 'block';
         }
@@ -704,14 +721,14 @@
       return false;
     }
 
-    // Check auth on load
-    (async function checkAuth() {
+    // Main Boot Procedure
+    async function verifyAndBoot() {
       if (isLocalhost) {
-        // Localhost — no auth needed, boot directly
+        document.getElementById('security-barrier').style.display = 'none';
+        initStudio();
         return;
       }
 
-      // Remote — check for saved token
       if (authToken) {
         try {
           const res = await fetch('/api/auth/verify', {
@@ -720,22 +737,28 @@
             body: '{}'
           });
           if (res.ok) {
+            document.getElementById('security-barrier').style.display = 'none';
             document.getElementById('mode-badge').textContent = 'minilab';
-            return; // Token is valid, let DOMContentLoaded boot the app
+            initStudio();
+            return;
           }
-        } catch (e) {}
-        // Token expired/invalid
+        } catch (e) {
+          console.error('Auth verification error:', e);
+        }
+        localStorage.removeItem('cms_auth_token');
         sessionStorage.removeItem('cms_auth_token');
         authToken = '';
       }
 
-      // Show login screen and block app boot
+      // Show login barrier
       document.getElementById('security-barrier').style.display = 'flex';
-      throw new Error('Auth Required');
-    })();
+      const tokenInput = document.getElementById('login-token');
+      if (tokenInput) tokenInput.focus();
+    }
 
     // Application State
     const studioState = {
+      initialized: false,
       posts: [],
       currentPost: null,
       uploadedImages: [],
@@ -764,13 +787,17 @@
       toastMessage: document.getElementById('toast-message')
     };
 
-    // Initialize Studio
-    document.addEventListener('DOMContentLoaded', async () => {
+    // Boot Studio
+    function initStudio() {
+      if (studioState.initialized) return;
+      studioState.initialized = true;
       initEasyMDE();
       initEvents();
       resetForm();
-      await loadPosts();
-    });
+      loadPosts();
+    }
+
+    document.addEventListener('DOMContentLoaded', verifyAndBoot);
 
     // Initialize EasyMDE Open Source Editor
     function initEasyMDE() {

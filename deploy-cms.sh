@@ -14,7 +14,7 @@ IMAGE_NAME="tls-cms"
 
 echo "=== 1. Copying Studio CMS Files to Minilab Server ==="
 ssh "$SERVER" "mkdir -p $REMOTE_DIR/data"
-scp server.py studio.html Dockerfile.cms the-lending-side-cms-k3s.yaml "$SERVER:$REMOTE_DIR/"
+scp server.py studio.html manifest.json Dockerfile.cms the-lending-side-cms-k3s.yaml "$SERVER:$REMOTE_DIR/"
 scp data/posts.json "$SERVER:$REMOTE_DIR/data/" 2>/dev/null || echo "  (no posts.json to copy, will clone from git)"
 
 # Rename Dockerfile.cms to Dockerfile on remote for the build
@@ -45,8 +45,8 @@ ssh "$SERVER" "cd $REMOTE_DIR && \
 
 echo ""
 echo "=== 3. Studio CMS successfully deployed! ==="
-echo "The Lending Side Authoring Studio is now running on K3s NodePort 30086 (Host Port 8086)."
-echo "Studio URL: http://minilab.home:8086/studio"
+echo "The Lending Side Authoring Studio is now running on K3s NodePort 30087 (Host Port 8087)."
+echo "Studio URL: http://minilab.home:8087/studio"
 echo ""
 echo "IMPORTANT: Set your auth token in the K8s manifest (CMS_AUTH_TOKEN env var)"
 echo "           and optionally GITHUB_PAT for the Deploy button to work."
