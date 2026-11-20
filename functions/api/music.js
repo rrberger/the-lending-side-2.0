@@ -149,7 +149,7 @@ export async function onRequestGet(context) {
     ).first();
 
     const { results } = await env.DB.prepare(
-      "SELECT * FROM music_spins ORDER BY played_at DESC LIMIT 30"
+      "SELECT * FROM music_spins ORDER BY played_at DESC LIMIT 100"
     ).all();
 
     let recent = results || [];

@@ -860,6 +860,16 @@ async function renderMusic() {
           <div class="music-grid-loading">// loading rotation archive...</div>
         </div>
       </div>
+
+      <div class="music-histogram-section">
+        <div class="music-section-title-row">
+          <span class="section-badge">// 02_LISTENING TELEMETRY & FREQUENCY HISTOGRAM</span>
+          <span class="section-badge-right" id="histogram-meta-badge">TELEMETRY ARCHIVE</span>
+        </div>
+        <div id="music-histogram-mount" class="music-histogram-mount">
+          <div class="music-grid-loading">// analyzing frequency telemetry...</div>
+        </div>
+      </div>
     </div>
   `;
 
@@ -998,6 +1008,123 @@ async function renderMusic() {
         </div>
       `;
     }).join('');
+  }
+
+  // 3. RENDER ROTATION FREQUENCY HISTOGRAM
+  const histMount = document.getElementById('music-histogram-mount');
+  const histBadge = document.getElementById('histogram-meta-badge');
+  if (histMount && recent.length > 0) {
+    const albumMap = new Map();
+    let rpm33Count = 0;
+    let rpm45Count = 0;
+    const genreMap = {};
+
+    recent.forEach(spin => {
+      const key = `${(spin.artist || 'Unknown').trim()} — ${(spin.title || 'Untitled').trim()}`;
+      if (!albumMap.has(key)) {
+        albumMap.set(key, {
+          artist: spin.artist || 'Unknown',
+          title: spin.title || 'Untitled',
+          year: spin.year || null,
+          format: spin.format || 'LP',
+          rpm: spin.rpm || 33,
+          cover_image_url: spin.cover_image_url || spin.thumb_image_url || '',
+          count: 0,
+          latest_played: spin.played_at || ''
+        });
+      }
+      const entry = albumMap.get(key);
+      entry.count += 1;
+      if (spin.played_at && (!entry.latest_played || spin.played_at > entry.latest_played)) {
+        entry.latest_played = spin.played_at;
+      }
+
+      if (spin.rpm === 45) {
+        rpm45Count += 1;
+      } else {
+        rpm33Count += 1;
+      }
+
+      if (spin.genre) {
+        const parts = spin.genre.split(',').map(s => s.trim());
+        parts.forEach(g => {
+          if (g) genreMap[g] = (genreMap[g] || 0) + 1;
+        });
+      }
+    });
+
+    const albumList = Array.from(albumMap.values()).sort((a, b) => b.count - a.count || b.latest_played.localeCompare(a.latest_played));
+    const totalSpins = recent.length;
+    const maxSpins = albumList.length > 0 ? albumList[0].count : 1;
+
+    if (histBadge) {
+      histBadge.textContent = `${totalSpins} SPINS LOGGED · ${albumList.length} RELEASES`;
+    }
+
+    const pct33 = Math.round((rpm33Count / totalSpins) * 100);
+    const pct45 = 100 - pct33;
+    const rpmSummary = `${pct33}% 33RPM / ${pct45}% 45RPM`;
+
+    const hudHtml = `
+      <div class="histogram-telemetry-hud">
+        <div class="hud-stat-cell">
+          <span class="hud-stat-label">TOTAL SPINS LOGGED</span>
+          <span class="hud-stat-val"><span class="val-highlight">${totalSpins}</span> SESSIONS</span>
+        </div>
+        <div class="hud-stat-cell">
+          <span class="hud-stat-label">UNIQUE RELEASES</span>
+          <span class="hud-stat-val"><span class="val-highlight">${albumList.length}</span> ALBUMS</span>
+        </div>
+        <div class="hud-stat-cell">
+          <span class="hud-stat-label">HEAVY ROTATION LEADER</span>
+          <span class="hud-stat-val" title="${escapeHtml(albumList[0].artist)} — ${escapeHtml(albumList[0].title)}">
+            <span class="val-highlight">${albumList[0].count}x</span> ${escapeHtml(albumList[0].artist)}
+          </span>
+        </div>
+        <div class="hud-stat-cell">
+          <span class="hud-stat-label">SPEED PROFILE</span>
+          <span class="hud-stat-val">${rpmSummary}</span>
+        </div>
+      </div>
+    `;
+
+    const rowsHtml = albumList.map((item, idx) => {
+      const pctOfTotal = ((item.count / totalSpins) * 100).toFixed(1);
+      const barFillPct = Math.max(8, Math.round((item.count / maxSpins) * 100));
+      const rankStr = String(idx + 1).padStart(2, '0');
+
+      return `
+        <div class="histogram-row">
+          <div class="histogram-row-header">
+            <div class="histogram-row-meta">
+              <span class="histogram-rank">#${rankStr}</span>
+              <div class="histogram-title-wrap">
+                <span class="histogram-record-title">${escapeHtml(item.title)}</span>
+                <span class="histogram-record-artist">// ${escapeHtml(item.artist)}</span>
+              </div>
+            </div>
+            <div class="histogram-row-metrics">
+              <span class="histogram-count-badge">${item.count} ${item.count === 1 ? 'SPIN' : 'SPINS'}</span>
+              <span class="histogram-pct">${pctOfTotal}%</span>
+            </div>
+          </div>
+          <div class="histogram-bar-track">
+            <div class="histogram-bar-fill" style="width: ${barFillPct}%;"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    histMount.innerHTML = `
+      ${hudHtml}
+      <div class="histogram-card">
+        <div class="histogram-list">
+          ${rowsHtml}
+        </div>
+      </div>
+    `;
+  } else if (histMount) {
+    histMount.innerHTML = `<div class="music-empty-state">// No listening telemetry available.</div>`;
   }
 
   // Auto-refresh poll every 30 seconds while user is on #music

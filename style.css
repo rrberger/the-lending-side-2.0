@@ -1210,7 +1210,7 @@ main.viewport {
 .pulse-led {
   width: 7px;
   height: 7px;
-  border-radius: 50%;
+  border-radius: 50% !important;
   background: var(--text-muted);
   display: inline-block;
 }
@@ -1237,7 +1237,7 @@ main.viewport {
 .idle-dot {
   width: 7px;
   height: 7px;
-  border-radius: 50%;
+  border-radius: 50% !important;
   background: var(--text-muted);
   opacity: 0.5;
   display: inline-block;
@@ -1332,16 +1332,21 @@ main.viewport {
 /* Tactile Vinyl Disc Peek */
 .vinyl-disc-peek {
   position: absolute;
-  right: -10px;
+  right: -20px;
   top: 50%;
   transform: translateY(-50%);
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: radial-gradient(circle at center, #1b202c 0%, #0a0c10 70%, #050608 100%);
+  width: 124px;
+  height: 124px;
+  border-radius: 50% !important;
+  background:
+    radial-gradient(circle at center, transparent 0%, transparent 22px, rgba(255, 255, 255, 0.05) 23px, transparent 25px, rgba(255, 255, 255, 0.03) 37px, transparent 39px, rgba(255, 255, 255, 0.04) 51px, transparent 53px),
+    repeating-radial-gradient(circle at center, #11141a 0px, #11141a 2px, #1c222e 3px, #0b0e14 4px),
+    #0a0c10;
   border: 1px solid #2a3449;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8), inset 0 0 1px 1px rgba(255, 255, 255, 0.07);
   z-index: 1;
+  transform-origin: center center;
+  overflow: hidden;
 }
 
 .vinyl-disc-peek::after {
@@ -1350,12 +1355,28 @@ main.viewport {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--accent-color);
-  opacity: 0.85;
-  box-shadow: inset 0 0 0 2px #0a0c10;
+  width: 42px;
+  height: 42px;
+  border-radius: 50% !important;
+  background: radial-gradient(circle at center, #0a0d14 0%, #0a0d14 5px, var(--accent-color) 6px, #c27800 100%);
+  opacity: 0.92;
+  border: 1px solid rgba(0, 0, 0, 0.6);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.4), 0 0 4px rgba(0, 0, 0, 0.7);
+  z-index: 2;
+}
+
+.vinyl-disc-peek::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50% !important;
+  background: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  z-index: 3;
 }
 
 .vinyl-disc-peek.spinning {
@@ -1604,6 +1625,191 @@ main.viewport {
   align-items: center;
   justify-content: center;
   gap: 0.8rem;
+}
+
+/* --- MUSIC LISTENING HISTOGRAM & TELEMETRY --- */
+.music-histogram-section {
+  margin-top: 2.5rem;
+  margin-bottom: 2rem;
+}
+
+.section-badge-right {
+  color: var(--accent-color);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+.histogram-telemetry-hud {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1.2rem;
+}
+
+.hud-stat-cell {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.hud-stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hud-stat-val {
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-stat-val .val-highlight {
+  color: var(--accent-color);
+}
+
+.histogram-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 1.2rem;
+}
+
+.histogram-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.histogram-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
+.histogram-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.histogram-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.8rem;
+  font-family: var(--font-mono);
+}
+
+.histogram-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.histogram-rank {
+  font-size: 0.68rem;
+  color: var(--accent-color);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.histogram-title-wrap {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.78rem;
+}
+
+.histogram-record-title {
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.histogram-record-artist {
+  color: var(--text-muted);
+  margin-left: 0.4rem;
+}
+
+.histogram-row-metrics {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  font-size: 0.68rem;
+}
+
+.histogram-count-badge {
+  color: var(--accent-color);
+  background: rgba(255, 144, 0, 0.08);
+  border: 1px solid rgba(255, 144, 0, 0.2);
+  padding: 1px 6px;
+  font-weight: 500;
+}
+
+.histogram-pct {
+  color: var(--text-muted);
+  min-width: 42px;
+  text-align: right;
+}
+
+.histogram-bar-track {
+  width: 100%;
+  height: 8px;
+  background: #090c12;
+  border: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+}
+
+.histogram-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #b86b00 0%, var(--accent-color) 100%);
+  position: relative;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.histogram-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 4px,
+    rgba(0, 0, 0, 0.4) 4px,
+    rgba(0, 0, 0, 0.4) 6px
+  );
+}
+
+@media (max-width: 600px) {
+  .histogram-telemetry-hud {
+    grid-template-columns: 1fr 1fr;
+  }
+  .histogram-row-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+  .histogram-row-metrics {
+    align-self: flex-end;
+  }
 }
 
 /* --- IMMERSIVE LIGHTBOX --- */
