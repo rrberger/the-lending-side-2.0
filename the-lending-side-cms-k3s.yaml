@@ -58,9 +58,30 @@ spec:
               name: tls-cms-secrets
               key: GITHUB_PAT
         - name: R2_BUCKET_NAME
-          value: "the-lending-side-media"
+          valueFrom:
+            secretKeyRef:
+              name: tls-cms-secrets
+              key: R2_BUCKET_NAME
+        - name: R2_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: tls-cms-secrets
+              key: R2_ACCESS_KEY_ID
+        - name: R2_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: tls-cms-secrets
+              key: R2_SECRET_ACCESS_KEY
+        - name: R2_ENDPOINT_URL
+          valueFrom:
+            secretKeyRef:
+              name: tls-cms-secrets
+              key: R2_ENDPOINT_URL
         - name: R2_PUBLIC_CUSTOM_DOMAIN
-          value: "https://media.thelendingside.com"
+          valueFrom:
+            secretKeyRef:
+              name: tls-cms-secrets
+              key: R2_PUBLIC_CUSTOM_DOMAIN
         - name: REPO_DIR
           value: "/data/repo"
         - name: GIT_REPO_URL
