@@ -53,7 +53,7 @@
       display: flex;
     }
 
-    /* Localhost security blocker */
+    /* Auth login screen */
     #security-barrier {
       display: none;
       position: fixed;
@@ -66,6 +66,47 @@
       font-family: var(--font-mono);
       text-align: center;
       padding: 2rem;
+    }
+
+    #login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      width: 320px;
+    }
+
+    #login-form input {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      padding: 0.7rem 1rem;
+      outline: none;
+      text-align: center;
+    }
+
+    #login-form input:focus {
+      border-color: var(--accent-color);
+    }
+
+    #login-form button {
+      background: var(--accent-color);
+      color: #000;
+      border: none;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.7rem;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    #login-error {
+      color: var(--danger-color);
+      font-size: 0.75rem;
+      display: none;
     }
 
     /* Layout structure */
@@ -510,12 +551,17 @@
 
 <body>
 
-  <!-- Localhost Security Guard -->
+  <!-- Auth Gate -->
   <div id="security-barrier">
-    <h2 style="color:var(--danger-color); margin-bottom:1rem;">[ ACCESS RESTRICTED ]</h2>
-    <p style="color:var(--text-muted); max-width:450px; font-size:0.85rem; line-height:1.6;">
-      The Authoring Studio is configured strictly for local development and post creation. Run <code>python3 server.py</code> and open this on <code>http://localhost:8000/studio</code>.
+    <h2 style="color:var(--accent-color); margin-bottom:0.5rem;">the lending side // studio</h2>
+    <p style="color:var(--text-muted); max-width:450px; font-size:0.8rem; line-height:1.5;">
+      enter your studio access token to continue
     </p>
+    <form id="login-form" onsubmit="return handleLogin(event)">
+      <input type="password" id="login-token" placeholder="access token" autocomplete="off" autofocus>
+      <button type="submit">authenticate</button>
+      <span id="login-error">invalid token — try again</span>
+    </form>
   </div>
 
   <!-- Sidebar / Posts Drawer -->
@@ -523,7 +569,7 @@
     <div class="sidebar-header">
       <div class="studio-logo">
         <span>the lending side // studio</span>
-        <span class="local-badge">local</span>
+        <span class="local-badge" id="mode-badge">local</span>
       </div>
       <button class="btn-new-post" id="btn-new-post">+ CREATE NEW POST</button>
     </div>
@@ -613,11 +659,80 @@
   </div>
 
   <script>
-    // 1. Localhost Security Enforcement
-    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      document.getElementById('security-barrier').style.display = 'flex';
-      throw new Error("Localhost Only");
+    // 1. Auth System — Localhost bypasses, remote requires token
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    let authToken = sessionStorage.getItem('cms_auth_token') || '';
+
+    function getAuthHeaders() {
+      const headers = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      return headers;
     }
+
+    function getAuthHeadersRaw() {
+      const headers = {};
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      return headers;
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const token = document.getElementById('login-token').value.trim();
+      if (!token) return false;
+
+      try {
+        const res = await fetch('/api/auth/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: '{}'
+        });
+        if (res.ok) {
+          authToken = token;
+          sessionStorage.setItem('cms_auth_token', token);
+          document.getElementById('security-barrier').style.display = 'none';
+          document.getElementById('mode-badge').textContent = 'minilab';
+          initEasyMDE();
+          initEvents();
+          resetForm();
+          await loadPosts();
+        } else {
+          document.getElementById('login-error').style.display = 'block';
+        }
+      } catch (err) {
+        document.getElementById('login-error').style.display = 'block';
+      }
+      return false;
+    }
+
+    // Check auth on load
+    (async function checkAuth() {
+      if (isLocalhost) {
+        // Localhost — no auth needed, boot directly
+        return;
+      }
+
+      // Remote — check for saved token
+      if (authToken) {
+        try {
+          const res = await fetch('/api/auth/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: '{}'
+          });
+          if (res.ok) {
+            document.getElementById('mode-badge').textContent = 'minilab';
+            return; // Token is valid, let DOMContentLoaded boot the app
+          }
+        } catch (e) {}
+        // Token expired/invalid
+        sessionStorage.removeItem('cms_auth_token');
+        authToken = '';
+      }
+
+      // Show login screen and block app boot
+      document.getElementById('security-barrier').style.display = 'flex';
+      throw new Error('Auth Required');
+    })();
 
     // Application State
     const studioState = {
@@ -689,6 +804,7 @@
 
       fetch('/api/upload', {
         method: 'POST',
+        headers: getAuthHeadersRaw(),
         body: formData
       })
       .then(r => r.json())
@@ -1007,7 +1123,7 @@
       try {
         const res = await fetch('/api/posts', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify(postPayload)
         });
 
@@ -1033,7 +1149,7 @@
       try {
         const res = await fetch('/api/git-deploy', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ title })
         });
         const data = await res.json();
@@ -1061,7 +1177,7 @@
       try {
         const res = await fetch('/api/posts/delete', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ id: studioState.currentPost.id })
         });
         const data = await res.json();

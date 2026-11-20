@@ -1,0 +1,32 @@
+# ==============================================================================
+# THE LENDING SIDE — AUTHORING STUDIO CMS
+# Containerized blog authoring backend for Minilab K3s deployment
+# Runtime: Python 3.11 | Storage: Flat-file (data/posts.json) + Cloudflare R2
+# ==============================================================================
+
+FROM python:3.11-slim-bookworm
+
+WORKDIR /app
+
+# Install system dependencies (git for deploy, curl for healthcheck)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    openssh-client \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+RUN pip3 install --no-cache-dir boto3
+
+# Copy application source
+COPY server.py /app/
+COPY studio.html /app/
+COPY data/ /app/data/
+
+ENV PYTHONUNBUFFERED=1
+ENV PORT=8000
+
+EXPOSE 8000
+
+CMD ["python3", "server.py"]
