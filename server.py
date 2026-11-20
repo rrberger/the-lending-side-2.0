@@ -5,7 +5,6 @@ import socketserver
 import json
 import re
 import mimetypes
-import secrets
 
 PORT = int(os.environ.get('PORT', 8000))
 DIRECTORY = os.environ.get('REPO_DIR', os.path.abspath(os.path.dirname(__file__)))
@@ -46,7 +45,6 @@ s3_client = None
 if R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY and R2_ENDPOINT_URL:
     try:
         import boto3
-        # Create S3 client pointing to Cloudflare R2 with connection timeouts
         from botocore.config import Config
         config = Config(
             connect_timeout=12,
@@ -64,7 +62,6 @@ if R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY and R2_ENDPOINT_URL:
         print("Cloudflare R2 Client Initialized Successfully.")
     except ImportError:
         print("Notice: R2 credentials found, but 'boto3' is not installed.")
-        print("Run: pip install boto3 to enable direct Cloudflare R2 uploads.")
     except Exception as e:
         print(f"Error initializing R2 client: {e}")
 
@@ -76,12 +73,10 @@ def init_repo():
 
     if os.path.exists(git_dir):
         print(f"Git repo already exists at {DIRECTORY}")
-        # Configure git identity for commits
         _configure_git()
         return
 
     if not GIT_REPO_URL:
-        # No git URL — just ensure directories exist
         os.makedirs(os.path.join(DIRECTORY, 'data'), exist_ok=True)
         if not os.path.exists(posts_path):
             with open(posts_path, 'w', encoding='utf-8') as f:
@@ -92,21 +87,20 @@ def init_repo():
     print(f"Cloning {GIT_REPO_URL} into {DIRECTORY}...")
     os.makedirs(DIRECTORY, exist_ok=True)
 
-    # Build clone URL with PAT for push access if available
     clone_url = GIT_REPO_URL
     if GITHUB_PAT and 'github.com' in GIT_REPO_URL:
-        clone_url = GIT_REPO_URL.replace('https://', f'https://x-access-token:{GITHUB_PAT}@')
+        clean_url = re.sub(r'https://[^@]+@', 'https://', GIT_REPO_URL)
+        clone_url = clean_url.replace('https://', f'https://x-access-token:{GITHUB_PAT}@')
 
     try:
         subprocess.run(
-            ["git", "clone", "--branch", GIT_BRANCH, "--depth", "1", clone_url, "."],
+            ["git", "clone", "--branch", GIT_BRANCH, clone_url, "."],
             check=True, cwd=DIRECTORY
         )
         print(f"Cloned successfully into {DIRECTORY}")
         _configure_git()
     except subprocess.CalledProcessError as e:
         print(f"Git clone failed: {e}")
-        # Ensure we at least have a data dir
         os.makedirs(os.path.join(DIRECTORY, 'data'), exist_ok=True)
         if not os.path.exists(posts_path):
             with open(posts_path, 'w', encoding='utf-8') as f:
@@ -120,117 +114,107 @@ def _configure_git():
         subprocess.run(["git", "config", "user.name", "TLS Studio"], check=False, cwd=DIRECTORY)
         subprocess.run(["git", "config", "user.email", "studio@thelendingside.com"], check=False, cwd=DIRECTORY)
 
-        # If we have a PAT, make sure the remote URL includes it for push
         if GITHUB_PAT and GIT_REPO_URL and 'github.com' in GIT_REPO_URL:
-            push_url = GIT_REPO_URL.replace('https://', f'https://x-access-token:{GITHUB_PAT}@')
+            clean_url = re.sub(r'https://[^@]+@', 'https://', GIT_REPO_URL)
+            push_url = clean_url.replace('https://', f'https://x-access-token:{GITHUB_PAT}@')
             subprocess.run(["git", "remote", "set-url", "origin", push_url], check=False, cwd=DIRECTORY)
-
-        # Unshallow so we can push
-        subprocess.run(["git", "fetch", "--unshallow"], check=False, cwd=DIRECTORY,
-                        capture_output=True)
     except Exception as e:
         print(f"Git config warning: {e}")
 
 
 class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        # Serve the repo directory for static files
         super().__init__(*args, directory=DIRECTORY, **kwargs)
 
+    def end_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Auth-Token')
+        super().end_headers()
+
     def _is_localhost(self):
-        """Check if the request is from localhost."""
         host = self.headers.get('Host', '')
         return host.startswith('localhost') or host.startswith('127.0.0.1')
 
     def _check_auth(self):
-        """Verify bearer token on non-localhost requests. Returns True if authorized."""
-        # Localhost is always trusted (local dev mode)
         if self._is_localhost():
             return True
 
-        # If no auth token is configured, block remote access entirely
         if not CMS_AUTH_TOKEN:
             self._send_json({"error": "Remote access requires CMS_AUTH_TOKEN"}, 403)
             return False
 
-        # Check Authorization header
         auth_header = self.headers.get('Authorization', '')
         if auth_header == f'Bearer {CMS_AUTH_TOKEN}':
             return True
 
-        # Check X-Auth-Token header (for simpler integrations)
         token_header = self.headers.get('X-Auth-Token', '')
         if token_header == CMS_AUTH_TOKEN:
             return True
 
-        # Check query param (for initial studio.html load)
         if f'token={CMS_AUTH_TOKEN}' in (self.path or ''):
             return True
 
         self._send_json({"error": "Unauthorized"}, 401)
         return False
 
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.end_headers()
+
     def do_GET(self):
-        # Health endpoint — always public (for K8s probes)
         if self.path == '/health':
             self._send_json({"status": "ok", "service": "tls-cms"})
             return
 
-        # Music API endpoint
         if self.path.startswith('/api/music'):
             self._handle_get_music()
             return
 
-        # Studio route — serve studio.html (auth check is done client-side via fetch)
-        if self.path.startswith('/studio'):
-            self.path = '/studio.html'
-            # On non-localhost, serve the file (login screen handles auth)
-            super().do_GET()
-            return
+        # Clean route alias for the authoring studio
+        if self.path in ('/studio', '/studio/', '/studio.html'):
+            local_studio = os.path.join(DIRECTORY, 'studio.html')
+            fallback_studio = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'studio.html')
+            target_path = local_studio if os.path.exists(local_studio) else fallback_studio
+            if os.path.exists(target_path):
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.end_headers()
+                with open(target_path, 'rb') as f:
+                    self.wfile.write(f.read())
+                return
 
         super().do_GET()
 
     def do_HEAD(self):
-        if self.path in ('/studio', '/studio/'):
-            self.path = '/studio.html'
+        if self.path in ('/studio', '/studio/', '/studio.html'):
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.end_headers()
+            return
         super().do_HEAD()
 
-    def do_OPTIONS(self):
-        """Handle CORS preflight requests."""
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Auth-Token')
-        self.end_headers()
-
     def do_POST(self):
-        # All POST endpoints require auth
         if not self._check_auth():
             return
 
-        # 1. Save / Edit Post Endpoint
         if self.path == '/api/posts':
             self._handle_save_post()
-        # 2. Delete Post Endpoint
         elif self.path == '/api/posts/delete':
             self._handle_delete_post()
-        # 3. Image Upload Endpoint
         elif self.path == '/api/upload':
             self._handle_upload()
-        # 4. Git Deploy Endpoint
         elif self.path == '/api/git-deploy':
             self._handle_git_deploy()
-        # 5. Music Now Playing / Scrobbles Webhook
         elif self.path == '/api/music':
             self._handle_post_music()
-        # 6. Auth verification endpoint
         elif self.path == '/api/auth/verify':
             self._send_json({"status": "ok", "message": "Token valid"})
         else:
             self.send_error(404, "Endpoint not found")
 
     def _handle_save_post(self):
-        content_length = int(self.headers['Content-Length'])
+        content_length = int(self.headers.get('Content-Length', 0))
         post_data = self.rfile.read(content_length).decode('utf-8')
         
         try:
@@ -256,12 +240,10 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json({"error": "Missing title or slug"}, 400)
             return
 
-        # Assign an ID if new
         if not post.get('id'):
             existing_ids = [p.get('id') for p in db.get('posts', []) if p.get('id')]
             post['id'] = max(existing_ids) + 1 if existing_ids else 1000
 
-        # Update or Append post
         posts_list = db.setdefault('posts', [])
         existing_index = -1
         for idx, p in enumerate(posts_list):
@@ -276,13 +258,12 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
             posts_list.insert(0, post)
             print(f"Created new post: {post['title']}")
 
-        # Merge EXIF data
         db_exif = db.setdefault('exif', {})
         for img_name, img_exif in exif.items():
             db_exif[img_name] = img_exif
 
-        # Save back to database file
         try:
+            os.makedirs(os.path.dirname(db_path), exist_ok=True)
             with open(db_path, 'w', encoding='utf-8') as f:
                 json.dump(db, f, indent=2, ensure_ascii=False)
             self._send_json({"status": "success", "post": post})
@@ -290,7 +271,7 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json({"error": f"Failed to write database: {str(e)}"}, 500)
 
     def _handle_delete_post(self):
-        content_length = int(self.headers['Content-Length'])
+        content_length = int(self.headers.get('Content-Length', 0))
         post_data = self.rfile.read(content_length).decode('utf-8')
         
         try:
@@ -335,19 +316,15 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json({"error": "Must be multipart/form-data"}, 400)
             return
 
-        # Extract boundary string
         match = re.search(r'boundary=([^;]+)', content_type)
         if not match:
             self._send_json({"error": "Boundary not found in header"}, 400)
             return
             
         boundary = match.group(1).encode('utf-8')
-        content_length = int(self.headers.get('Content-Length'))
+        content_length = int(self.headers.get('Content-Length', 0))
         
-        # Read raw body bytes
         raw_body = self.rfile.read(content_length)
-        
-        # Split body parts by boundary
         parts = raw_body.split(b'--' + boundary)
         
         uploaded_files = []
@@ -358,7 +335,6 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
             if not part or part == b'--\r\n' or part == b'\r\n' or part == b'--':
                 continue
                 
-            # Split headers and body content inside the boundary block
             header_body_split = part.split(b'\r\n\r\n', 1)
             if len(header_body_split) < 2:
                 continue
@@ -366,31 +342,25 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
             headers_part, body_part = header_body_split
             headers_str = headers_part.decode('utf-8', errors='ignore')
             
-            # Find Content-Disposition to extract file details
             cd_match = re.search(r'Content-Disposition:\s*form-data;[^\r\n]*filename="([^"]+)"', headers_str, re.IGNORECASE)
             if cd_match:
-                filename = cd_match.group(1)
-                # Clean filename
-                filename = os.path.basename(filename)
-                # Strip trailing \r\n from binary body part
+                filename = os.path.basename(cd_match.group(1))
                 if body_part.endswith(b'\r\n'):
                     body_part = body_part[:-2]
                     
-                # Upload to Cloudflare R2 if client is configured
                 if s3_client is not None:
                     try:
-                        content_type, _ = mimetypes.guess_type(filename)
-                        if not content_type:
-                            content_type = 'image/jpeg'
+                        c_type, _ = mimetypes.guess_type(filename)
+                        if not c_type:
+                            c_type = 'image/jpeg'
                             
                         s3_client.put_object(
                             Bucket=R2_BUCKET_NAME,
                             Key=filename,
                             Body=body_part,
-                            ContentType=content_type
+                            ContentType=c_type
                         )
                         
-                        # Resolve public image URL
                         if R2_PUBLIC_CUSTOM_DOMAIN:
                             public_url = f"{R2_PUBLIC_CUSTOM_DOMAIN.rstrip('/')}/{filename}"
                         else:
@@ -405,7 +375,6 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
                             f.write(body_part)
                         uploaded_files.append(filename)
                 else:
-                    # Save locally
                     file_path = os.path.join(images_dir, filename)
                     try:
                         with open(file_path, 'wb') as f:
@@ -433,15 +402,19 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         import subprocess
         try:
-            # 1. Stage posts database
-            subprocess.run(["git", "add", "data/posts.json"], check=True, cwd=DIRECTORY)
-            # 2. Commit with post title
+            subprocess.run(["git", "add", "data/posts.json"], check=False, cwd=DIRECTORY)
+            if os.path.exists(os.path.join(DIRECTORY, "data", "music.json")):
+                subprocess.run(["git", "add", "data/music.json"], check=False, cwd=DIRECTORY)
+
             commit_res = subprocess.run(["git", "commit", "-m", commit_msg], capture_output=True, text=True, cwd=DIRECTORY)
-            # 3. Pull latest first to avoid conflicts
-            subprocess.run(["git", "pull", "--rebase", "origin", GIT_BRANCH],
-                           capture_output=True, text=True, cwd=DIRECTORY)
-            # 4. Attempt push to origin
+            print(f"Git commit: {commit_res.stdout or commit_res.stderr}")
+
+            pull_res = subprocess.run(["git", "pull", "--rebase", "origin", GIT_BRANCH],
+                                      capture_output=True, text=True, cwd=DIRECTORY)
+            print(f"Git pull: {pull_res.stdout or pull_res.stderr}")
+
             push_res = subprocess.run(["git", "push", "origin", GIT_BRANCH], capture_output=True, text=True, cwd=DIRECTORY)
+            print(f"Git push: {push_res.stdout or push_res.stderr}")
             
             if push_res.returncode == 0:
                 self._send_json({
@@ -452,9 +425,9 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 self._send_json({
                     "status": "partial",
-                    "message": "Changes committed locally, but push failed. Check GITHUB_PAT configuration.",
+                    "message": "Changes committed locally, but push failed. See details below.",
                     "terminal_command": f"git push origin {GIT_BRANCH}",
-                    "details": push_res.stderr
+                    "details": push_res.stderr or push_res.stdout
                 })
         except subprocess.CalledProcessError as e:
             self._send_json({"status": "error", "error": f"Git command failed: {str(e)}"}, 500)
@@ -526,7 +499,6 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
                     "thumb_image_url": record.get("thumb_image_url"),
                     "played_at": payload.get("timestamp")
                 }
-                # Keep top 30
                 db["recent_spins"] = [new_entry] + [s for s in spins if s.get("title") != record.get("title") or s.get("artist") != record.get("artist")][:29]
         elif action == "stop":
             if db.get("now_playing"):
@@ -544,17 +516,13 @@ class CMSRequestHandler(http.server.SimpleHTTPRequestHandler):
     def _send_json(self, data, status_code=200):
         self.send_response(status_code)
         self.send_header('Content-Type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Auth-Token')
         self.end_headers()
         self.wfile.write(json.dumps(data).encode('utf-8'))
 
 if __name__ == '__main__':
-    # Initialize repo on first boot (clone from GitHub if REPO_DIR + GIT_REPO_URL are set)
     init_repo()
 
     handler = CMSRequestHandler
-    # Run the socket server
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     try:
         with socketserver.ThreadingTCPServer(("", PORT), handler) as httpd:
