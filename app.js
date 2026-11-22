@@ -796,20 +796,62 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-function formatRelativeTime(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return '';
+// Helper function to safely parse UTC date strings from SQLite or ISO
+function parseUtcDate(dateStr) {
+  if (!dateStr) return null;
+  let s = String(dateStr).trim();
+  if (!s) return null;
+  // If no timezone offset (Z or +/-HH:MM), treat as UTC
+  if (!s.endsWith('Z') && !/[+-]\d{2}(:\d{2})?$/.test(s)) {
+    s = s.replace(' ', 'T') + 'Z';
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// Format timestamp explicitly into Eastern Standard Time (EST/EDT) with relative indicator
+function formatEasternMusicTime(dateStr) {
+  const d = parseUtcDate(dateStr);
+  if (!d) return '';
+
+  const estStr = d.toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZoneName: 'short'
+  });
+
   const now = new Date();
   const diffSec = Math.floor((now - d) / 1000);
-  if (diffSec < 60) return 'just now';
-  const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHours = Math.floor(diffMin / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  let rel = '';
+  if (diffSec >= 0) {
+    if (diffSec < 60) rel = 'just now';
+    else if (diffSec < 3600) rel = `${Math.floor(diffSec / 60)}m ago`;
+    else if (diffSec < 86400) rel = `${Math.floor(diffSec / 3600)}h ago`;
+    else if (diffSec < 604800) rel = `${Math.floor(diffSec / 86400)}d ago`;
+  }
+
+  return rel ? `${estStr} · ${rel}` : estStr;
+}
+
+function formatRelativeTime(dateStr) {
+  const d = parseUtcDate(dateStr);
+  if (!d) return '';
+  const now = new Date();
+  const diffSec = Math.floor((now - d) / 1000);
+  if (diffSec >= 0) {
+    if (diffSec < 60) return 'just now';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+  }
+  return d.toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' });
 }
 
 let musicPollTimer = null;
@@ -914,7 +956,7 @@ async function renderMusic() {
           <div class="now-spinning-details">
             <div class="meta-headline">
               <span class="live-badge">NEEDLE DROPPED</span>
-              ${np.started_at ? `<span class="time-elapsed">${formatRelativeTime(np.started_at)}</span>` : ''}
+              ${np.started_at ? `<span class="time-elapsed">${formatEasternMusicTime(np.started_at)}</span>` : ''}
             </div>
             <h2 class="record-title">${escapeHtml(np.title)}</h2>
             <h3 class="record-artist">${escapeHtml(np.artist)}</h3>
@@ -959,7 +1001,7 @@ async function renderMusic() {
           <div class="now-spinning-details">
             <div class="meta-headline">
               <span class="idle-badge">PREVIOUS ROTATION</span>
-              ${lastSpun && lastSpun.played_at ? `<span class="time-elapsed">${formatRelativeTime(lastSpun.played_at)}</span>` : ''}
+              ${lastSpun && lastSpun.played_at ? `<span class="time-elapsed">${formatEasternMusicTime(lastSpun.played_at)}</span>` : ''}
             </div>
             <h2 class="record-title">${lastSpun ? escapeHtml(lastSpun.title) : 'No recent playback'}</h2>
             <h3 class="record-artist">${lastSpun ? escapeHtml(lastSpun.artist) : 'Analog Listener active in home studio'}</h3>
@@ -987,7 +1029,7 @@ async function renderMusic() {
         ? `<img src="${art}" alt="${escapeHtml(item.title)}" class="record-card-thumb" loading="lazy">`
         : `<div class="card-thumb-fallback">💽</div>`;
 
-      const timeStr = formatRelativeTime(item.played_at);
+      const timeStr = formatEasternMusicTime(item.played_at);
 
       return `
         <div class="record-card">

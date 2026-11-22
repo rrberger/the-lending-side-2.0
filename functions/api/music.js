@@ -255,12 +255,13 @@ export async function onRequestPost(context) {
       ).run();
 
       if (action === "spin") {
+        const nowIso = new Date().toISOString();
         await env.DB.prepare(`
           INSERT INTO music_spins 
             (record_id, title, artist, year, genre, label, format, side, rpm, cover_image_url, thumb_image_url, played_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
-          record.id || null, title, artist, year, genre, label, format, side, rpm, coverUrl, thumbUrl
+          record.id || null, title, artist, year, genre, label, format, side, rpm, coverUrl, thumbUrl, nowIso
         ).run();
       }
 
