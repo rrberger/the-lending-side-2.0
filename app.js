@@ -1233,10 +1233,6 @@ function renderAbout() {
         <p>all images & words are mine.</p>
         <p>thanks for reading.</p>
         <p>ryan at thelendingside.com</p>
-        
-        <div class="about-signature">
-          — ryan.
-        </div>
       </div>
     </div>
   `;
