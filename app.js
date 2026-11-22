@@ -939,7 +939,7 @@ async function renderMusic() {
             <span class="status-label">LIVE ON TURNTABLE // NOW SPINNING</span>
           </div>
           <div class="status-right">
-            <span class="tag-pill accent">SIDE ${escapeHtml(np.side || 'A')}</span>
+            <span class="tag-pill accent">PLAYING</span>
             <span class="tag-pill">${np.rpm || 33} RPM</span>
             <span class="tag-pill">${escapeHtml(np.format || 'LP')}</span>
           </div>
@@ -1178,7 +1178,7 @@ async function renderMusic() {
     }
     const fresh = await fetchMusicData();
     if (fresh && fresh.now_playing) {
-      if (!np || !np.active || np.title !== fresh.now_playing.title || np.side !== fresh.now_playing.side) {
+      if (!np || !np.active || np.title !== fresh.now_playing.title) {
         renderMusic();
       }
     } else if (np && np.active) {

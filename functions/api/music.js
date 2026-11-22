@@ -226,7 +226,7 @@ export async function onRequestPost(context) {
       const genre = record.genre || null;
       const label = record.label || null;
       const format = record.format || "LP";
-      const side = (session.side || body.side || "A").toUpperCase();
+      const side = session.side || body.side || null;
       const rpm = session.rpm || body.rpm || record.rpm || 33;
       const coverUrl = record.cover_image_url || null;
       const thumbUrl = record.thumb_image_url || null;
