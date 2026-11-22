@@ -1228,7 +1228,7 @@ function renderPrints() {
 function renderAbout() {
   const aboutPage = state.pages.find(p => p.slug === 'contact') || {
     title: "about",
-    content: "<p>all images are analog & all words are mine.</p><p>thanks for reading.</p><p>ryan at thelendingside.com</p>"
+    content: "<p>all images & words are mine.</p><p>thanks for reading.</p><p>ryan at thelendingside.com</p>"
   };
   
   let html = `
@@ -1239,11 +1239,6 @@ function renderAbout() {
         
         <div class="about-signature">
           — ryan.
-        </div>
-        
-        <div class="about-contact-links">
-          <a href="mailto:ryan@thelendingside.com">Email Me</a>
-          <a href="https://github.com/lawle" target="_blank" rel="noopener">GitHub</a>
         </div>
       </div>
     </div>
