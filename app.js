@@ -836,7 +836,7 @@ async function renderMusic() {
   elements.viewContent.innerHTML = `
     <div class="page-container music-page">
       <div class="music-header">
-        <h1>music<span class="stoplight"></span></h1>
+        <h1>music</h1>
         <p class="music-intro">
           this is an api that posts what records i'm playing on my turn table. i wanted to bridge my analog audio setup - where i listen to the most music - with my little corner of the soon-to-be-dead internet.
         </p>
