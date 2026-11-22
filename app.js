@@ -1169,7 +1169,7 @@ function renderPrints() {
     <div class="page-container">
       <h1>prints</h1>
       <div class="page-content">
-        <p>all of the photos (probably more like **most**) are available as physical prints. each print is individually printed at home by me, on premium archival photo paper, and is signed, dated, and numbered on the reverse side.</p>
+        <p>all of the photos (probably more like most) are available as physical prints. each print is individually printed at home by me, on premium archival photo paper, and is signed, dated, and numbered on the reverse side.</p>
         <p>i can do up to 13x19 at home, but if you want a custom size, let me know and i can get it done.</p>
       </div>
       
@@ -1226,16 +1226,13 @@ function renderPrints() {
 
 // --- RENDER 5: ABOUT PAGE ---
 function renderAbout() {
-  const aboutPage = state.pages.find(p => p.slug === 'contact') || {
-    title: "about",
-    content: "<p>all images & words are mine.</p><p>thanks for reading.</p><p>ryan at thelendingside.com</p>"
-  };
-
   let html = `
     <div class="page-container">
-      <h1>${aboutPage.title.toLowerCase()}</h1>
+      <h1>about</h1>
       <div class="page-content">
-        ${aboutPage.content}
+        <p>all images & words are mine.</p>
+        <p>thanks for reading.</p>
+        <p>ryan at thelendingside.com</p>
         
         <div class="about-signature">
           — ryan.
