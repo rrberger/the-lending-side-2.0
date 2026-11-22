@@ -9,7 +9,7 @@ const state = {
   lightboxImages: [],
   lightboxIndex: 0,
   selectedPrintImage: null,
-  
+
   // Editor State
   activeEditorPost: null,
   editorUploadedImages: []
@@ -24,7 +24,7 @@ const elements = {
   themeIconText: document.getElementById('theme-icon-text'),
   menuLinks: document.querySelectorAll('.menu-link'),
   currentYear: document.getElementById('current-year'),
-  
+
   // Lightbox
   lightbox: document.getElementById('lightbox'),
   lightboxImg: document.getElementById('lightbox-img'),
@@ -33,7 +33,7 @@ const elements = {
   lightboxClose: document.getElementById('lightbox-close'),
   lightboxPrev: document.getElementById('lightbox-prev'),
   lightboxNext: document.getElementById('lightbox-next'),
-  
+
   // Inquiry Modal
   inquiryModal: document.getElementById('inquiry-modal'),
   inquiryClose: document.getElementById('inquiry-close'),
@@ -55,7 +55,7 @@ async function init() {
   setTheme(state.currentTheme);
   bindEvents();
   renderLoading();
-  
+
   await fetchDatabase();
   handleRoute();
 }
@@ -66,7 +66,7 @@ async function fetchDatabase() {
     const response = await fetch('./data/posts.json?t=' + Date.now());
     if (!response.ok) throw new Error('Data file not found');
     const data = await response.json();
-    
+
     state.posts = data.posts || [];
     state.pages = data.pages || [];
     state.exifMap = data.exif || {};
@@ -79,32 +79,32 @@ async function fetchDatabase() {
 // Bind Event Listeners
 function bindEvents() {
   window.addEventListener('hashchange', handleRoute);
-  
+
   if (elements.themeToggleBtn) {
     elements.themeToggleBtn.addEventListener('click', () => {
       const nextTheme = state.currentTheme === 'dark' ? 'light' : 'dark';
       setTheme(nextTheme);
     });
   }
-  
+
   elements.switchBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
       const viewMode = e.target.getAttribute('data-view');
       setViewMode(viewMode);
     });
   });
-  
+
   if (elements.lightboxClose) elements.lightboxClose.addEventListener('click', closeLightbox);
   if (elements.lightboxPrev) elements.lightboxPrev.addEventListener('click', prevLightbox);
   if (elements.lightboxNext) elements.lightboxNext.addEventListener('click', nextLightbox);
-  
+
   document.addEventListener('keydown', (e) => {
     if (!elements.lightbox.classList.contains('active')) return;
     if (e.key === 'Escape') closeLightbox();
     if (e.key === 'ArrowLeft') prevLightbox();
     if (e.key === 'ArrowRight') nextLightbox();
   });
-  
+
   // Touch gestures in Lightbox
   let touchStartX = 0;
   let touchEndX = 0;
@@ -117,13 +117,13 @@ function bindEvents() {
     if (touchEndX < touchStartX - threshold) nextLightbox();
     if (touchEndX > touchStartX + threshold) prevLightbox();
   }, { passive: true });
-  
+
   elements.lightbox.addEventListener('click', (e) => {
     if (e.target === elements.lightbox || e.target.classList.contains('lightbox-content')) {
       closeLightbox();
     }
   });
-  
+
   if (elements.inquiryClose) elements.inquiryClose.addEventListener('click', closeInquiry);
   if (elements.inquiryForm) elements.inquiryForm.addEventListener('submit', submitInquiry);
   elements.inquiryModal.addEventListener('click', (e) => {
@@ -135,19 +135,19 @@ function bindEvents() {
 function handleRoute() {
   const hash = window.location.hash || '#home';
   updateActiveLinks(hash);
-  
+
   window.scrollTo(0, 0);
   closeLightbox();
   closeInquiry();
-  
+
   if (hash.startsWith('#post/')) {
     const slug = hash.replace('#post/', '');
     elements.layoutSwitcher.style.display = 'none';
     renderPostDetail(slug);
     return;
   }
-  
-  switch(hash) {
+
+  switch (hash) {
     case '#home':
     case '':
       elements.layoutSwitcher.style.display = 'block';
@@ -215,14 +215,14 @@ function getExifString(imageSrc) {
   const filename = imageSrc.split('/').pop().split('?')[0];
   const exif = state.exifMap[filename];
   if (!exif) return '';
-  
+
   const parts = [];
   if (exif.camera) parts.push(exif.camera);
   if (exif.focal_length) parts.push(exif.focal_length);
   if (exif.aperture) parts.push(exif.aperture);
   if (exif.shutter_speed) parts.push(exif.shutter_speed);
   if (exif.iso) parts.push(`ISO ${exif.iso}`);
-  
+
   return parts.join('  •  ');
 }
 
@@ -304,22 +304,22 @@ function renderFilmStripView() {
 
       <div class="film_strip-container" id="film_strip-canvas">
   `;
-  
+
   state.posts.forEach((post, postIdx) => {
     const images = parseImagesFromHTML(post.content);
-    
+
     if (post.featured_image) {
       const isFeaturedIncluded = images.some(img => img.src === post.featured_image);
       if (!isFeaturedIncluded) {
         images.unshift({ src: post.featured_image, alt: post.title, title: post.title });
       }
     }
-    
+
     const formattedDate = new Date(post.date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
     }).toLowerCase();
-    
+
     html += `
       <section class="film_strip-post" data-post-idx="${postIdx}" id="film-post-${postIdx}">
         <div class="film_strip-meta">
@@ -330,7 +330,7 @@ function renderFilmStripView() {
         </div>
         <div class="film_strip-gallery">
     `;
-    
+
     images.forEach((img, imgIdx) => {
       html += `
         <div class="film_strip-image-container" data-post-idx="${postIdx}" data-img-idx="${imgIdx}">
@@ -338,19 +338,19 @@ function renderFilmStripView() {
         </div>
       `;
     });
-    
+
     html += `
         </div>
       </section>
     `;
   });
-  
+
   html += `
       </div>
     </div>
   `;
   elements.viewContent.innerHTML = html;
-  
+
   const canvas = document.getElementById('film_strip-canvas');
   const postElements = elements.viewContent.querySelectorAll('.film_strip-post');
   const counterEl = document.getElementById('film-counter');
@@ -433,16 +433,16 @@ function renderFilmStripView() {
 // B. Journal vertical flow view
 function renderJournalView() {
   let html = `<div class="journal-container">`;
-  
+
   state.posts.forEach((post) => {
     const formattedDate = new Date(post.date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     }).toLowerCase();
-    
+
     let processedContent = post.content;
-    
+
     html += `
       <article class="journal-post-card">
         <header class="journal-post-header">
@@ -455,10 +455,10 @@ function renderJournalView() {
       </article>
     `;
   });
-  
+
   html += `</div>`;
   elements.viewContent.innerHTML = html;
-  
+
   // Bind Lightbox triggers on journal images
   const journalImages = elements.viewContent.querySelectorAll('.journal-post-content img');
   const allImageUrls = Array.from(journalImages).map(img => {
@@ -470,7 +470,7 @@ function renderJournalView() {
       title: img.getAttribute('data-image-title') || img.getAttribute('alt') || 'Photograph'
     };
   });
-  
+
   journalImages.forEach((img, idx) => {
     img.style.cursor = 'zoom-in';
     const parentA = img.closest('a');
@@ -494,19 +494,19 @@ function renderIndexView() {
     <div class="index-container">
       <div class="index-grid">
   `;
-  
+
   state.posts.forEach((post) => {
     const formattedDate = new Date(post.date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short'
     }).toLowerCase();
-    
+
     let imageSrc = post.featured_image;
     if (!imageSrc) {
       const extracted = parseImagesFromHTML(post.content);
       imageSrc = extracted.length > 0 ? extracted[0].src : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
     }
-    
+
     html += `
       <div class="index-card">
         <a href="#post/${post.slug}">
@@ -521,7 +521,7 @@ function renderIndexView() {
       </div>
     `;
   });
-  
+
   html += `
       </div>
     </div>
@@ -542,13 +542,13 @@ function renderPostDetail(slug) {
     `;
     return;
   }
-  
+
   const formattedDate = new Date(post.date).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   }).toLowerCase();
-  
+
   let html = `
     <article class="post-detail-view">
       <a href="#home" class="back-link">&larr; BACK_TO_FEED</a>
@@ -597,9 +597,9 @@ function renderPostDetail(slug) {
       </section>
     </article>
   `;
-  
+
   elements.viewContent.innerHTML = html;
-  
+
   const postImages = elements.viewContent.querySelectorAll('.journal-post-content img');
   const allImageUrls = Array.from(postImages).map(img => {
     const rawSrc = img.getAttribute('data-orig-file') || img.getAttribute('src') || '';
@@ -610,7 +610,7 @@ function renderPostDetail(slug) {
       title: img.getAttribute('data-image-title') || post.title || 'Photograph'
     };
   });
-  
+
   postImages.forEach((img, idx) => {
     img.style.cursor = 'zoom-in';
     const parentA = img.closest('a');
@@ -651,7 +651,7 @@ async function initComments(slug) {
       const data = await res.json();
       const comments = data.comments || [];
       if (countEl) countEl.textContent = comments.length;
-      
+
       if (comments.length === 0) {
         listEl.innerHTML = `<div class="comment-empty">> no comments yet. be the first to leave a thought.</div>`;
       } else {
@@ -823,7 +823,7 @@ async function fetchMusicData() {
     try {
       const fallbackRes = await fetch('data/music.json');
       if (fallbackRes.ok) return await fallbackRes.json();
-    } catch {}
+    } catch { }
     return { now_playing: null, recent_spins: [] };
   }
 }
@@ -885,7 +885,7 @@ async function renderMusic() {
   // 1. RENDER NOW SPINNING WIDGET
   if (np && np.active) {
     const artUrl = np.cover_image_url || np.thumb_image_url || '';
-    const artHtml = artUrl 
+    const artHtml = artUrl
       ? `<img src="${artUrl}" alt="${escapeHtml(np.title)}" class="now-spinning-art" loading="lazy">`
       : `<div class="art-fallback"><span class="fallback-vinyl-icon">💽</span></div>`;
 
@@ -932,7 +932,7 @@ async function renderMusic() {
     // Idle state: show last spun record or clean idle terminal card
     const lastSpun = recent[0] || null;
     const artUrl = lastSpun ? (lastSpun.cover_image_url || lastSpun.thumb_image_url || '') : '';
-    const artHtml = artUrl 
+    const artHtml = artUrl
       ? `<img src="${artUrl}" alt="${escapeHtml(lastSpun.title)}" class="now-spinning-art" loading="lazy">`
       : `<div class="art-fallback"><span class="fallback-vinyl-icon">💽</span></div>`;
 
@@ -983,7 +983,7 @@ async function renderMusic() {
   } else {
     gridMount.innerHTML = recent.map(item => {
       const art = item.cover_image_url || item.thumb_image_url || '';
-      const thumbHtml = art 
+      const thumbHtml = art
         ? `<img src="${art}" alt="${escapeHtml(item.title)}" class="record-card-thumb" loading="lazy">`
         : `<div class="card-thumb-fallback">💽</div>`;
 
@@ -1152,7 +1152,7 @@ const renderPlaylists = renderMusic;
 function renderPrints() {
   const allImages = [];
   const addedSrcs = new Set();
-  
+
   state.posts.forEach(post => {
     const images = parseImagesFromHTML(post.content);
     images.forEach(img => {
@@ -1162,15 +1162,15 @@ function renderPrints() {
       }
     });
   });
-  
+
   const gallerySelection = allImages.slice(0, 12);
-  
+
   let html = `
     <div class="page-container">
       <h1>prints</h1>
       <div class="page-content">
-        <p>everything i capture and write here is available as a physical print. each piece is individually printed at home by me, on premium archival photo paper, and is signed, dated, and numbered on the reverse side.</p>
-        <p>i inspect every single frame myself to ensure the grain structure, depth of shadows, and tones are translated correctly from digital screen to ink on paper.</p>
+        <p>all of the photos (probably more like **most**) are available as physical prints. each print is individually printed at home by me, on premium archival photo paper, and is signed, dated, and numbered on the reverse side.</p>
+        <p>i can do up to 13x19 at home, but if you want a custom size, let me know and i can get it done.</p>
       </div>
       
       <div class="print-specifications">
@@ -1191,7 +1191,7 @@ function renderPrints() {
       <h2 class="print-gallery-title">select a frame for print inquiry</h2>
       <div class="print-grid">
   `;
-  
+
   gallerySelection.forEach(img => {
     html += `
       <div class="print-photo-card" data-src="${img.src}" data-title="${img.title}">
@@ -1203,7 +1203,7 @@ function renderPrints() {
       </div>
     `;
   });
-  
+
   html += `
       </div>
       <div style="font-family:var(--font-mono); font-size:0.75rem; text-align:center; color:var(--text-muted); margin-top: 3rem;">
@@ -1211,9 +1211,9 @@ function renderPrints() {
       </div>
     </div>
   `;
-  
+
   elements.viewContent.innerHTML = html;
-  
+
   const printCards = elements.viewContent.querySelectorAll('.print-photo-card');
   printCards.forEach(card => {
     card.addEventListener('click', () => {
@@ -1230,7 +1230,7 @@ function renderAbout() {
     title: "about",
     content: "<p>all images & words are mine.</p><p>thanks for reading.</p><p>ryan at thelendingside.com</p>"
   };
-  
+
   let html = `
     <div class="page-container">
       <h1>${aboutPage.title.toLowerCase()}</h1>
@@ -1243,7 +1243,7 @@ function renderAbout() {
       </div>
     </div>
   `;
-  
+
   elements.viewContent.innerHTML = html;
 }
 
@@ -1252,21 +1252,21 @@ function renderAbout() {
 function openLightboxForPost(postIdx, imgIdx) {
   const post = state.posts[postIdx];
   const images = parseImagesFromHTML(post.content);
-  
+
   if (post.featured_image) {
     const isFeaturedIncluded = images.some(img => img.src === post.featured_image);
     if (!isFeaturedIncluded) {
       images.unshift({ src: post.featured_image, alt: post.title, title: post.title });
     }
   }
-  
+
   openLightboxGlobal(images, imgIdx);
 }
 
 function openLightboxGlobal(imagesList, index) {
   state.lightboxImages = imagesList;
   state.lightboxIndex = index;
-  
+
   updateLightboxContent();
   elements.lightbox.classList.add('active');
   document.body.style.overflow = 'hidden';
@@ -1275,15 +1275,15 @@ function openLightboxGlobal(imagesList, index) {
 function updateLightboxContent() {
   if (state.lightboxImages.length === 0) return;
   const currentImg = state.lightboxImages[state.lightboxIndex];
-  
+
   elements.lightboxImg.src = currentImg.src;
   elements.lightboxImg.alt = currentImg.alt;
   elements.lightboxTitle.textContent = currentImg.title.toLowerCase();
-  
+
   if (elements.lightboxExif) {
     elements.lightboxExif.textContent = '';
   }
-  
+
   const hasMultiple = state.lightboxImages.length > 1;
   elements.lightboxPrev.style.display = hasMultiple ? 'flex' : 'none';
   elements.lightboxNext.style.display = hasMultiple ? 'flex' : 'none';
@@ -1324,16 +1324,16 @@ function closeInquiry() {
 
 function submitInquiry(e) {
   e.preventDefault();
-  
+
   const size = elements.printSize.value;
   const name = elements.clientName.value;
   const email = elements.clientEmail.value;
   const notes = elements.clientNotes.value;
   const photoTitle = state.selectedPrintImage.title;
-  
+
   const recipient = "ryan@thelendingside.com";
   const subject = encodeURIComponent(`Print Inquiry: "${photoTitle}"`);
-  
+
   const bodyText = `Hi Ryan,
 
 I am writing to inquire about a physical print of your photograph: "${photoTitle}".
@@ -1350,7 +1350,7 @@ Thank you!`;
 
   const body = encodeURIComponent(bodyText);
   window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
-  
+
   elements.inquiryForm.reset();
   closeInquiry();
 }
